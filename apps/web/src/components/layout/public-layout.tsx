@@ -30,11 +30,8 @@ export function PublicLayout() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <div className="hidden items-center gap-2 sm:flex">
-              <Button variant="ghost" asChild>
-                <Link to="/login">Entrar</Link>
-              </Button>
               <Button asChild>
-                <Link to="/register">Criar conta</Link>
+                <Link to="/login">Entrar</Link>
               </Button>
             </div>
           </div>
@@ -54,9 +51,6 @@ export function PublicLayout() {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link to="/login" className="hover:text-foreground">
               Entrar
-            </Link>
-            <Link to="/register" className="hover:text-foreground">
-              Criar conta
             </Link>
           </div>
         </div>

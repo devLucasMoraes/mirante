@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router";
-import { LayoutDashboard, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, Users } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   DropdownMenu,
@@ -16,12 +17,8 @@ import { BrandLogo } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useAuthStore } from "@/auth/authStore";
 
-const NAV_ITEMS = [
-  { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
-];
-
-function getInitials(name: string, email: string): string {
-  const source = name.trim() || email.trim();
+function getInitials(name: string, username: string): string {
+  const source = name.trim() || username.trim();
   return source.slice(0, 2).toUpperCase() || "A";
 }
 
@@ -30,8 +27,9 @@ function UserMenu() {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
-  const email = user?.email ?? "";
-  const name = user?.name ?? email;
+  const username = user?.username ?? "";
+  const name = user?.name ?? username;
+  const isAdmin = user?.role === "admin";
 
   const handleLogout = async () => {
     await logout();
@@ -49,20 +47,26 @@ function UserMenu() {
         >
           <Avatar className="size-9">
             <AvatarFallback className="text-xs">
-              {getInitials(name, email)}
+              {getInitials(name, username)}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-foreground">{name}</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {name}
+            {isAdmin ? <Badge variant="secondary">Admin</Badge> : null}
+          </span>
           <span className="text-xs font-normal text-muted-foreground">
-            {email}
+            @{username}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => void handleLogout()}>
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => void handleLogout()}
+        >
           <LogOut className="text-destructive" />
           Sair
         </DropdownMenuItem>
@@ -71,10 +75,17 @@ function UserMenu() {
   );
 }
 
-function SidebarNav() {
+function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
+  const items = isAdmin
+    ? [
+        { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Usuários", href: "/dashboard/usuarios", icon: Users },
+      ]
+    : [{ label: "Visão geral", href: "/dashboard", icon: LayoutDashboard }];
+
   return (
     <nav className="flex-1 space-y-1 p-4">
-      {NAV_ITEMS.map((item) => (
+      {items.map((item) => (
         <NavLink
           key={item.href}
           to={item.href}
@@ -96,11 +107,16 @@ function SidebarNav() {
   );
 }
 
-function MobileMenu() {
+function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          aria-label="Abrir menu"
+        >
           <Menu />
         </Button>
       </SheetTrigger>
@@ -108,26 +124,28 @@ function MobileMenu() {
         <div className="flex h-16 items-center border-b border-border px-6">
           <BrandLogo />
         </div>
-        <SidebarNav />
+        <SidebarNav isAdmin={isAdmin} />
       </SheetContent>
     </Sheet>
   );
 }
 
 export function DashboardShell() {
+  const isAdmin = useAuthStore((state) => state.user?.role === "admin");
+
   return (
     <div className="flex min-h-svh">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border md:flex">
         <div className="flex h-16 items-center border-b border-border px-6">
           <BrandLogo size="sm" />
         </div>
-        <SidebarNav />
+        <SidebarNav isAdmin={isAdmin} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 border-b border-border px-4 md:px-6">
           <div className="flex items-center gap-2">
-            <MobileMenu />
+            <MobileMenu isAdmin={isAdmin} />
             <span className="text-sm font-medium text-muted-foreground md:hidden">
               Conta
             </span>

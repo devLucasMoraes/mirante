@@ -2,9 +2,17 @@
   "users": [
     {
       "id": "usr_1",
-      "name": "Lucas",
-      "email": "lucas@teste.com",
-      "password": "123456"
+      "username": "admin",
+      "name": "Administrador",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "usr_2",
+      "username": "lucas",
+      "name": "Lucas Moraes",
+      "password": "123456",
+      "role": "user"
     }
   ],
   "posts": [

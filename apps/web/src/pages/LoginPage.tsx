@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, TriangleAlert } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
@@ -18,13 +18,13 @@ export function LoginPage() {
   const isLoading = useAuthStore((state) => state.status === "loading");
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const success = await login({ email, password });
+    const success = await login({ username, password });
     if (success) {
       toast.success("Bem-vindo de volta!");
       navigate("/dashboard", { replace: true });
@@ -36,7 +36,7 @@ export function LoginPage() {
       <CardHeader className="p-0">
         <CardTitle className="text-2xl">Entrar na sua conta</CardTitle>
         <CardDescription>
-          Bem-vindo de volta! Entre para continuar de onde parou.
+          Bem-vindo de volta! Entre com seu usuário e senha.
         </CardDescription>
       </CardHeader>
 
@@ -52,24 +52,21 @@ export function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
+          <Label htmlFor="username">Usuário</Label>
           <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="voce@exemplo.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            id="username"
+            type="text"
+            autoComplete="username"
+            placeholder="Seu usuário"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
             required
             disabled={isLoading}
           />
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Senha</Label>
-            <span className="text-xs text-muted-foreground">Esqueceu a senha?</span>
-          </div>
+          <Label htmlFor="password">Senha</Label>
           <div className="relative">
             <Input
               id="password"
@@ -89,7 +86,11 @@ export function LoginPage() {
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               tabIndex={-1}
             >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {showPassword ? (
+                <EyeOff className="size-4" />
+              ) : (
+                <Eye className="size-4" />
+              )}
             </button>
           </div>
         </div>
@@ -105,16 +106,6 @@ export function LoginPage() {
           )}
         </Button>
       </form>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Não tem uma conta?{" "}
-        <Link
-          to="/register"
-          className="font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Criar conta
-        </Link>
-      </p>
     </div>
   );
 }

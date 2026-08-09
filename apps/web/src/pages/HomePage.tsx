@@ -167,17 +167,19 @@ function PreviewCard() {
           </div>
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
-              {[["Receita", "R$ 128k"], ["Novos usuários", "2.4k"], ["Conversão", "12,8%"]].map(
-                ([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-lg border border-border bg-muted/40 p-4"
-                  >
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="mt-1 text-xl font-semibold">{value}</p>
-                  </div>
-                ),
-              )}
+              {[
+                ["Receita", "R$ 128k"],
+                ["Novos usuários", "2.4k"],
+                ["Conversão", "12,8%"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-lg border border-border bg-muted/40 p-4"
+                >
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-xl font-semibold">{value}</p>
+                </div>
+              ))}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg border border-border bg-muted/40 p-4">
@@ -194,7 +196,8 @@ function PreviewCard() {
                   <Check className="size-4 text-emerald-500" /> Tarefas em dia
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Check className="size-4 text-emerald-500" /> Sprint atualizada
+                  <Check className="size-4 text-emerald-500" /> Sprint
+                  atualizada
                 </div>
               </div>
             </div>
@@ -225,29 +228,32 @@ export function HomePage() {
             Produtividade em escala para a sua equipe
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            A plataforma tudo-em-um que ajuda times a planejar, executar e
-            medir o trabalho em um só lugar — sem migrar a forma de trabalhar.
+            A plataforma tudo-em-um que ajuda times a planejar, executar e medir
+            o trabalho em um só lugar — sem migrar a forma de trabalhar.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
-              <Link to="/register">
-                Começar grátis
+              <Link to="/login">
+                Entrar
                 <ArrowRight />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/login">Ver demonstração</Link>
+              <a href="#recursos">Ver recurso</a>
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Sem cartão de crédito · Cancele quando quiser
+            Acesso restrito à rede interna da empresa
           </p>
 
           <PreviewCard />
         </div>
       </section>
 
-      <section id="recursos" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-24">
+      <section
+        id="recursos"
+        className="mx-auto max-w-7xl scroll-mt-20 px-6 py-24"
+      >
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
             Tudo o que você precisa para crescer
@@ -329,7 +335,7 @@ export function HomePage() {
                     variant={plan.highlight ? "default" : "outline"}
                     asChild
                   >
-                    <Link to="/register">{plan.cta}</Link>
+                    <Link to="/login">{plan.cta}</Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -354,7 +360,9 @@ export function HomePage() {
           {TESTIMONIALS.map((testimonial) => (
             <Card key={`${testimonial.author}-${testimonial.role}`}>
               <CardContent className="flex h-full flex-col justify-between p-6">
-                <p className="text-muted-foreground">&ldquo;{testimonial.quote}&rdquo;</p>
+                <p className="text-muted-foreground">
+                  &ldquo;{testimonial.quote}&rdquo;
+                </p>
                 <div className="mt-6 flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                     {testimonial.author.slice(0, 2)}
@@ -398,12 +406,15 @@ export function HomePage() {
 
       <section className="px-6 pb-24">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl bg-primary px-6 py-16 text-center text-primary-foreground md:py-20">
-          <Rocket className="mx-auto mb-6 size-10 text-primary-foreground/80" aria-hidden="true" />
+          <Rocket
+            className="mx-auto mb-6 size-10 text-primary-foreground/80"
+            aria-hidden="true"
+          />
           <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight md:text-4xl">
             Pronto para trabalhar com mais leveza?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80">
-            Crie sua conta gratuita e sinta a diferença em poucos minutos.
+            Fale com o administrador do sistema para solicitar seu acesso.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
@@ -412,8 +423,8 @@ export function HomePage() {
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               asChild
             >
-              <Link to="/register">
-                Começar agora
+              <Link to="/login">
+                Entrar
                 <ArrowRight />
               </Link>
             </Button>

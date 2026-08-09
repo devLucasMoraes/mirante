@@ -14,7 +14,6 @@ type AuthState = {
   status: AuthStatus;
   error: string | null;
   login: (credentials: Credentials) => Promise<boolean>;
-  register: (credentials: Credentials) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
 };
@@ -33,26 +32,6 @@ export const useAuthStore = create<AuthState>()(
         set({ status: "loading", error: null });
         try {
           const { data } = await api.post<unknown>("/auth/login", payload);
-          const session = authResponseSchema.parse(data);
-          set({
-            user: session.user,
-            accessToken: session.accessToken,
-            refreshToken: session.refreshToken,
-            status: "authenticated",
-            error: null,
-          });
-          return true;
-        } catch (error) {
-          set({ status: "unauthenticated", error: getErrorMessage(error) });
-          return false;
-        }
-      },
-
-      register: async (credentials) => {
-        const payload = credentialsSchema.parse(credentials);
-        set({ status: "loading", error: null });
-        try {
-          const { data } = await api.post<unknown>("/auth/signup", payload);
           const session = authResponseSchema.parse(data);
           set({
             user: session.user,

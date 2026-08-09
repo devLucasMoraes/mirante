@@ -1,6 +1,5 @@
 import jsonServer from "json-server";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "node:crypto";
 
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
@@ -20,7 +19,12 @@ server.use(middlewares);
 server.use(jsonServer.bodyParser);
 
 function signTokens(user) {
-  const payload = { id: user.id, email: user.email, name: user.name };
+  const payload = {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  };
   const accessToken = jwt.sign(payload, ACCESS_SECRET, {
     expiresIn: ACCESS_EXPIRES_IN,
   });
@@ -32,39 +36,14 @@ function signTokens(user) {
 }
 
 server.post(`${AUTH_PREFIX}/login`, (req, res) => {
-  const { email, password } = req.body ?? {};
-  const user = router.db.get("users").find({ email, password }).value();
+  const { username, password } = req.body ?? {};
+  const user = router.db.get("users").find({ username, password }).value();
 
   if (!user) {
     return res.status(401).json({ message: "Credenciais invalidas" });
   }
 
   res.json(signTokens(user));
-});
-
-server.post(`${AUTH_PREFIX}/signup`, (req, res) => {
-  const { email, password } = req.body ?? {};
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Informe e-mail e senha" });
-  }
-
-  if (router.db.get("users").find({ email }).value()) {
-    return res.status(409).json({ message: "E-mail ja cadastrado" });
-  }
-
-  const user = {
-    id: `usr_${randomUUID()}`,
-    name: email
-      .split("@")[0]
-      .replace(/[._-]+/g, " ")
-      .trim(),
-    email,
-    password,
-  };
-
-  router.db.get("users").push(user).write();
-  res.status(201).json(signTokens(user));
 });
 
 server.post(`${AUTH_PREFIX}/refresh`, (req, res) => {
@@ -83,7 +62,12 @@ server.post(`${AUTH_PREFIX}/refresh`, (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: payload.id, email: payload.email, name: payload.name },
+      {
+        id: payload.id,
+        username: payload.username,
+        name: payload.name,
+        role: payload.role,
+      },
       ACCESS_SECRET,
       { expiresIn: ACCESS_EXPIRES_IN },
     );
@@ -114,9 +98,31 @@ server.use((req, res, next) => {
       return res.status(401).json({ message: "Token invalido ou expirado" });
     }
     req.user = payload;
+
+    if (req.path.startsWith("/api/users") && payload.role !== "admin") {
+      return res.status(403).json({ message: "Acesso restrito ao administrador" });
+    }
+
     next();
   });
 });
+
+const originalRender = router.render.bind(router);
+router.render = (req, res) => {
+  const sanitize = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(sanitize);
+    }
+    if (value && typeof value === "object") {
+      const copy = { ...value };
+      delete copy.password;
+      return copy;
+    }
+    return value;
+  };
+  res.locals.data = sanitize(res.locals.data);
+  originalRender(req, res);
+};
 
 server.use("/api", router);
 

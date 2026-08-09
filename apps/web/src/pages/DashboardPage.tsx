@@ -47,31 +47,56 @@ const STATS = [
 ];
 
 const PROJECTS = [
-  { name: "Website corporativo", status: "Em andamento", owner: "Dani Alves", progress: 68 },
-  { name: "Painel de métricas", status: "Em revisão", owner: "Rafael Costa", progress: 84 },
-  { name: "Onboarding novo cliente", status: "Concluído", owner: "Bia Ramos", progress: 100 },
-  { name: "Documentação da API", status: "Em andamento", owner: "Leo Prado", progress: 41 },
+  {
+    name: "Website corporativo",
+    status: "Em andamento",
+    owner: "Dani Alves",
+    progress: 68,
+  },
+  {
+    name: "Painel de métricas",
+    status: "Em revisão",
+    owner: "Rafael Costa",
+    progress: 84,
+  },
+  {
+    name: "Onboarding novo cliente",
+    status: "Concluído",
+    owner: "Bia Ramos",
+    progress: 100,
+  },
+  {
+    name: "Documentação da API",
+    status: "Em andamento",
+    owner: "Leo Prado",
+    progress: 41,
+  },
 ];
 
 type ProjectStatus = (typeof PROJECTS)[number]["status"];
 
-const STATUS_VARIANT: Record<ProjectStatus, "outline" | "secondary" | "default"> = {
+const STATUS_VARIANT: Record<
+  ProjectStatus,
+  "outline" | "secondary" | "default"
+> = {
   "Em andamento": "secondary",
   "Em revisão": "outline",
-  "Concluído": "default",
+  Concluído: "default",
 };
 
 export function DashboardPage() {
   const user = useAuthStore((state) => state.user);
-  const email = user?.email ?? "";
-  const name = user?.name ?? email;
+  const username = user?.username ?? "";
+  const name = user?.name ?? username;
   const firstName = name.split(" ")[0] ?? "aí";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Olá, {firstName}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Olá, {firstName}
+          </h1>
           <p className="mt-1 text-muted-foreground">
             Veja o que está acontecendo no seu workspace hoje.
           </p>
@@ -99,7 +124,10 @@ export function DashboardPage() {
                 <span className="text-2xl font-semibold tracking-tight">
                   {stat.value}
                 </span>
-                <Badge variant="secondary" className="gap-0.5 px-1.5 py-0 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="gap-0.5 px-1.5 py-0 text-xs"
+                >
                   <ArrowUpRight className="size-3" />
                   {stat.change}
                 </Badge>
@@ -122,7 +150,9 @@ export function DashboardPage() {
               <TableRow>
                 <TableHead className="w-[45%]">Projeto</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Responsável</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Responsável
+                </TableHead>
                 <TableHead className="hidden text-right sm:table-cell">
                   Progresso
                 </TableHead>
