@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "id": "usr_1",
+      "name": "Lucas",
+      "email": "lucas@teste.com",
+      "password": "123456"
+    }
+  ],
+  "posts": [
+    {
+      "id": "pst_1",
+      "title": "Post protegido",
+      "body": "So acessivel com um token valido."
+    }
+  ]
+}
