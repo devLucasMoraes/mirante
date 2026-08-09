@@ -1,17 +1,8 @@
 import { z } from "zod";
+import { userRoleSchema, userSchema } from "@repo/authorization";
 
-export const userRoleSchema = z.enum(["admin", "user"]);
-
-export type UserRole = z.infer<typeof userRoleSchema>;
-
-export const userSchema = z.object({
-  id: z.string(),
-  username: z.string(),
-  name: z.string(),
-  role: userRoleSchema,
-});
-
-export type User = z.infer<typeof userSchema>;
+export { userRoleSchema, userSchema } from "@repo/authorization";
+export type { User, UserRole } from "@repo/authorization";
 
 export const credentialsSchema = z.object({
   username: z.string().min(3, "O usuário deve ter ao menos 3 caracteres"),

@@ -1,10 +1,10 @@
 import { Navigate, Outlet } from "react-router";
-import { useAuthStore } from "../auth/authStore";
+import { useAbility } from "@casl/react";
 
 export function AdminRoute() {
-  const isAdmin = useAuthStore((state) => state.user?.role === "admin");
+  const ability = useAbility();
 
-  if (!isAdmin) {
+  if (ability.cannot("manage", "User")) {
     return <Navigate to="/dashboard" replace />;
   }
 

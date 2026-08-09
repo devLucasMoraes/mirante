@@ -13,33 +13,36 @@ import { AuthLayout } from "./components/layout/auth-layout";
 import { DashboardShell } from "./components/layout/dashboard-shell";
 import { ThemeProvider } from "./theme/theme-provider";
 import { Toaster } from "./components/theme/toaster";
+import { AppAbilityProvider } from "./auth/ability-provider";
 
 function App() {
   return (
     <ThemeProvider>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-
-        <Route element={<AuthLayout />}>
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<LoginPage />} />
+      <AppAbilityProvider>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
-        </Route>
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardShell />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route element={<AdminRoute />}>
-              <Route path="/dashboard/usuarios" element={<UsersPage />} />
+          <Route element={<AuthLayout />}>
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<LoginPage />} />
             </Route>
           </Route>
-        </Route>
-      </Routes>
-      <Toaster />
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardShell />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<AdminRoute />}>
+                <Route path="/dashboard/usuarios" element={<UsersPage />} />
+              </Route>
+            </Route>
+          </Route>
+        </Routes>
+        <Toaster />
+      </AppAbilityProvider>
     </ThemeProvider>
   );
 }

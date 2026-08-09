@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@casl/react": "^7.0.1",
+    "@repo/authorization": "workspace:*",
     "@repo/ui": "workspace:*",
     "axios": "^1.19.0",
     "lucide-react": "^1.30.0",
