@@ -1,0 +1,10 @@
+services:
+  mongodb:
+    container_name: ${MONGO_CONTAINER_NAME:-mongodb-prod}
+    restart: unless-stopped
+    volumes:
+      - ./docker/mongodb/init-user.js:/docker-entrypoint-initdb.d/init-user.js:ro
+      - mongo_data_prod:/data/db
+
+volumes:
+  mongo_data_prod:

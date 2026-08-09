@@ -1,0 +1,11 @@
+services:
+  mongodb:
+    container_name: ${MONGO_CONTAINER_NAME:-mongodb-test}
+    ports:
+      - "${MONGODB_PORT_TEST:-27018}:27017"
+    volumes:
+      - ./docker/mongodb/init-user.js:/docker-entrypoint-initdb.d/init-user.js:ro
+      - mongo_data_test:/data/db
+
+volumes:
+  mongo_data_test:
