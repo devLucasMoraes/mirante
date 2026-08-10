@@ -19,6 +19,17 @@ const envSchema = z.object({
   MONGO_INITDB_PASSWORD: z.string().min(1),
   PORT: z.coerce.number().default(3000),
   HOST: z.string().default("0.0.0.0"),
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  ACCESS_TOKEN_TTL: z.string().min(1).default("15m"),
+  REFRESH_TOKEN_TTL: z.string().min(1).default("7d"),
+  COOKIE_SECRET: z.string().min(32),
+  COOKIE_SECURE: z.coerce.boolean().default(process.env.NODE_ENV === "production"),
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+  SEED_ADMIN_USERNAME: z.string().min(3).default("admin"),
+  SEED_ADMIN_NAME: z.string().min(1).default("Administrador"),
+  SEED_ADMIN_PASSWORD: z.string().min(6).default("admin123"),
 });
 
 const parsed = envSchema.safeParse(process.env);

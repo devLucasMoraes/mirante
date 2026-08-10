@@ -1,25 +1,17 @@
 import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { refreshResponseSchema } from "./schemas";
 import { useAuthStore } from "./authStore";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333/api";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore.getState();
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
 api.interceptors.response.use(
   (response) => response,
@@ -35,11 +27,10 @@ api.interceptors.response.use(
     ) {
       originalConfig._retry = true;
       refreshPromise ??= performRefresh();
-      const newAccessToken = await refreshPromise;
+      const refreshed = await refreshPromise;
       refreshPromise = null;
 
-      if (newAccessToken) {
-        originalConfig.headers.Authorization = `Bearer ${newAccessToken}`;
+      if (refreshed) {
         return api(originalConfig);
       }
     }
@@ -48,20 +39,14 @@ api.interceptors.response.use(
   },
 );
 
-async function performRefresh(): Promise<string | null> {
-  const { refreshToken, logout } = useAuthStore.getState();
-  if (!refreshToken) {
-    await logout();
-    return null;
-  }
+async function performRefresh(): Promise<boolean> {
+  const { logout } = useAuthStore.getState();
 
   try {
-    const { data } = await api.post<unknown>("/auth/refresh", { refreshToken });
-    const { accessToken } = refreshResponseSchema.parse(data);
-    useAuthStore.setState({ accessToken });
-    return accessToken;
+    await api.post("/auth/refresh");
+    return true;
   } catch {
     await logout();
-    return null;
+    return false;
   }
 }

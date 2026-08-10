@@ -5,12 +5,12 @@ A [Turborepo](https://turborepo.dev) monorepo powered by [pnpm](https://pnpm.io)
 ## Apps and Packages
 
 - `apps/web` — a [Vite](https://vite.dev) + [React](https://react.dev) + TypeScript app
-- `apps/mock-server` — a Node [json-server](https://github.com/typicode/json-server) with JWT auth endpoints (`:3333/api`)
+- `apps/api` — a [Fastify](https://fastify.dev) + [Mongoose](https://mongoosejs.com) API (`:3000/api`) with cookie-only auth
 - `packages/ui` (`@repo/ui`) — a React component library (no build step; imported as TSX source)
 - `packages/eslint-config` — shared ESLint configs (`base`, `react-internal`)
 - `packages/typescript-config` — shared `tsconfig` presets
 
-The app and library packages are 100% TypeScript (the mock server is plain Node).
+Every package is 100% TypeScript.
 
 ## Getting Started
 
@@ -19,7 +19,7 @@ pnpm install
 pnpm dev
 ```
 
-Run `pnpm dev` from the repo root to start the Vite dev server at <http://localhost:5173>.
+Run `pnpm dev` from the repo root to start the Fastify API (`:3000`) and the Vite dev server at <http://localhost:5173>. The API requires MongoDB (see `docker compose up -d`).
 
 ## Scripts
 

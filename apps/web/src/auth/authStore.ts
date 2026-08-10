@@ -9,8 +9,6 @@ type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated";
 
 type AuthState = {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   status: AuthStatus;
   error: string | null;
   login: (credentials: Credentials) => Promise<boolean>;
@@ -22,8 +20,6 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       status: "idle",
       error: null,
 
@@ -35,8 +31,6 @@ export const useAuthStore = create<AuthState>()(
           const session = authResponseSchema.parse(data);
           set({
             user: session.user,
-            accessToken: session.accessToken,
-            refreshToken: session.refreshToken,
             status: "authenticated",
             error: null,
           });
@@ -48,18 +42,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        const { refreshToken } = useAuthStore.getState();
-        if (refreshToken) {
-          try {
-            await api.post("/auth/logout", { refreshToken });
-          } catch {
-            // best-effort: o logout local sempre acontece
-          }
+        try {
+          await api.post("/auth/logout");
+        } catch {
+          // best-effort: o logout local sempre acontece
         }
         set({
           user: null,
-          accessToken: null,
-          refreshToken: null,
           status: "unauthenticated",
           error: null,
         });
@@ -72,8 +61,6 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
       }),
     },
   ),
