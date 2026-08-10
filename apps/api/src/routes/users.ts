@@ -3,7 +3,8 @@ import type { FastifyInstance } from "fastify";
 import { AppError, isDuplicateKeyError } from "../errors.ts";
 import { UserModel, toUserDTO } from "../models/User.ts";
 import { hashPassword } from "../services/passwords.ts";
-import { authenticate, requireAdmin } from "../plugins/auth.ts";
+import { authenticate } from "../plugins/auth.ts";
+import { getUserAbility, requireAbility, toUserSubject } from "../authorization.ts";
 import {
   createUserSchema,
   updateUserSchema,
@@ -24,11 +25,11 @@ async function findUserOrThrow(id: string) {
 
 export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", authenticate);
-  fastify.addHook("preHandler", requireAdmin);
 
   fastify.get(
     "/users",
     {
+      preHandler: requireAbility("read", "User"),
       schema: {
         response: {
           200: { type: "array", items: userResponseSchema },
@@ -44,6 +45,7 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/users",
     {
+      preHandler: requireAbility("create", "User"),
       schema: {
         response: { 201: userResponseSchema },
       },
@@ -89,6 +91,25 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const data = parsed.data;
 
       const user = await findUserOrThrow(id);
+      const ability = getUserAbility(request.user);
+      const target = toUserSubject(toUserDTO(user));
+
+      if (ability.cannot("update", target)) {
+        throw new AppError(403, "Acesso restrito.");
+      }
+      if (data.username !== undefined && ability.cannot("update", target, "username")) {
+        throw new AppError(403, "Acesso restrito.");
+      }
+      if (data.name !== undefined && ability.cannot("update", target, "name")) {
+        throw new AppError(403, "Acesso restrito.");
+      }
+      if (data.role !== undefined && ability.cannot("update", target, "role")) {
+        throw new AppError(403, "Acesso restrito.");
+      }
+      if (data.password !== undefined && ability.cannot("update", target, "password")) {
+        throw new AppError(403, "Acesso restrito.");
+      }
+
       if (data.username !== undefined) {
         user.username = data.username;
       }
@@ -115,13 +136,19 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete("/users/:id", async (request, reply) => {
-    const { id } = request.params as { id: string };
-    if (request.user.id === id) {
-      throw new AppError(400, "Você não pode excluir a si mesmo.");
-    }
-    await findUserOrThrow(id);
-    await UserModel.deleteOne({ _id: id }).exec();
-    return reply.status(204).send();
-  });
+  fastify.delete(
+    "/users/:id",
+    {
+      preHandler: requireAbility("delete", "User"),
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      if (request.user.id === id) {
+        throw new AppError(400, "Você não pode excluir a si mesmo.");
+      }
+      await findUserOrThrow(id);
+      await UserModel.deleteOne({ _id: id }).exec();
+      return reply.status(204).send();
+    },
+  );
 }

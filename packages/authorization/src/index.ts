@@ -3,15 +3,15 @@ export {
   createAppAbility,
   type AppAbilities,
   type AppAbility,
-} from "./abilities";
+} from "./abilities.ts";
 export {
   defineAbilityFor,
   defineRulesFor,
-} from "./ability";
+} from "./ability.ts";
 export {
   userRoleSchema,
   userSchema,
   type User,
   type UserRole,
-} from "./schemas";
-export { userSubject } from "./subjects/user";
+} from "./schemas.ts";
+export { userSubject } from "./subjects/user.ts";

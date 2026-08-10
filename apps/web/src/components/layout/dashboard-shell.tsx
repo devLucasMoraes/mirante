@@ -1,5 +1,12 @@
 import { NavLink, Outlet, useNavigate } from "react-router";
-import { LayoutDashboard, LogOut, Menu, Users } from "lucide-react";
+import { useAbility } from "@casl/react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
 import { Badge } from "@repo/ui/components/badge";
@@ -25,11 +32,12 @@ function getInitials(name: string, username: string): string {
 function UserMenu() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const ability = useAbility();
   const navigate = useNavigate();
 
   const username = user?.username ?? "";
   const name = user?.name ?? username;
-  const isAdmin = user?.role === "admin";
+  const isAdmin = ability.can("manage", "User");
 
   const handleLogout = async () => {
     await logout();
@@ -63,6 +71,10 @@ function UserMenu() {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate("/dashboard/perfil")}>
+          <UserRound />
+          Meu perfil
+        </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
           onClick={() => void handleLogout()}
@@ -76,12 +88,13 @@ function UserMenu() {
 }
 
 function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
-  const items = isAdmin
-    ? [
-        { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
-        { label: "Usuários", href: "/dashboard/usuarios", icon: Users },
-      ]
-    : [{ label: "Visão geral", href: "/dashboard", icon: LayoutDashboard }];
+  const items = [
+    { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Perfil", href: "/dashboard/perfil", icon: UserRound },
+    ...(isAdmin
+      ? [{ label: "Usuários", href: "/dashboard/usuarios", icon: Users }]
+      : []),
+  ];
 
   return (
     <nav className="flex-1 space-y-1 p-4">
@@ -131,7 +144,8 @@ function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
 }
 
 export function DashboardShell() {
-  const isAdmin = useAuthStore((state) => state.user?.role === "admin");
+  const ability = useAbility();
+  const isAdmin = ability.can("manage", "User");
 
   return (
     <div className="flex min-h-svh">

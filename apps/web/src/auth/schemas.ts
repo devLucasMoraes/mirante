@@ -38,3 +38,13 @@ export const updateUserSchema = z.object({
 });
 
 export type UpdateUserPayload = z.infer<typeof updateUserSchema>;
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(1, "Informe o nome").optional(),
+  password: z
+    .string()
+    .min(6, "A senha deve ter ao menos 6 caracteres")
+    .optional(),
+});
+
+export type UpdateProfilePayload = z.infer<typeof updateProfileSchema>;

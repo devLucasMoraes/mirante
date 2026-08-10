@@ -4,7 +4,7 @@ import {
   type MongoAbility,
 } from "@casl/ability";
 import { z } from "zod";
-import { userSubject } from "./subjects/user";
+import { userSubject } from "./subjects/user.ts";
 
 export const appAbilities = z.union([
   userSubject,

@@ -35,6 +35,9 @@ importers:
       '@fastify/rate-limit':
         specifier: ^11.2.0
         version: 11.2.0
+      '@repo/authorization':
+        specifier: workspace:*
+        version: link:../../packages/authorization
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3

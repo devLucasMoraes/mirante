@@ -51,12 +51,6 @@ export async function authenticate(request: FastifyRequest): Promise<void> {
   }
 }
 
-export async function requireAdmin(request: FastifyRequest): Promise<void> {
-  if (request.user?.role !== "admin") {
-    throw new AppError(403, "Acesso restrito ao administrador.");
-  }
-}
-
 export default fp<{ refreshSecret: string; refreshTtl: string }>(
   async function authPlugin(fastify: FastifyInstance, opts) {
     const authService: AuthService = {

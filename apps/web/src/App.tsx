@@ -5,6 +5,7 @@ import { AdminRoute } from "./routes/AdminRoute";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { UsersPage } from "./pages/UsersPage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -35,6 +36,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard/perfil" element={<ProfilePage />} />
               <Route element={<AdminRoute />}>
                 <Route path="/dashboard/usuarios" element={<UsersPage />} />
               </Route>

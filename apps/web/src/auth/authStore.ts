@@ -13,6 +13,7 @@ type AuthState = {
   error: string | null;
   login: (credentials: Credentials) => Promise<boolean>;
   logout: () => Promise<void>;
+  setUser: (user: User) => void;
   clearError: () => void;
 };
 
@@ -53,6 +54,8 @@ export const useAuthStore = create<AuthState>()(
           error: null,
         });
       },
+
+      setUser: (user) => set({ user }),
 
       clearError: () => set({ error: null }),
     }),
