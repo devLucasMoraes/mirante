@@ -7,8 +7,8 @@ import {
   type User,
 } from "@repo/authorization";
 import { AppError } from "./errors.ts";
-import type { JwtUser } from "./plugins/auth.ts";
-import type { UserDTO } from "./models/User.ts";
+import type { JwtUser } from "../types/fastify.ts";
+import type { UserDTO } from "../models/user.model.ts";
 
 export function getUserAbility(user: JwtUser): AppAbility {
   return defineAbilityFor(userSchema.parse({ ...user }));

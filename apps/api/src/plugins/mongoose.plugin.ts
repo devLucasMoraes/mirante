@@ -12,7 +12,7 @@ export interface MongoosePluginOptions {
   uri: string;
 }
 
-export default fp<MongoosePluginOptions>(
+export const mongoosePlugin = fp<MongoosePluginOptions>(
   async function (fastify: FastifyInstance, opts) {
     mongoose.connection.on("error", (err) => {
       fastify.log.error({ err }, "MongoDB connection error");

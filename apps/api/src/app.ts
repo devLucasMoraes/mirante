@@ -13,13 +13,10 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
-import mongoosePlugin from "./plugins/mongoose.ts";
-import authPlugin from "./plugins/auth.ts";
-import healthRoutes from "./routes/health.ts";
-import authRoutes from "./routes/auth.ts";
-import usersRoutes from "./routes/users.ts";
+import { mongoosePlugin, authPlugin } from "./plugins/index.ts";
+import { healthRoutes, authRoutes, userRoutes } from "./routes/index.ts";
 import { config, mongoUri } from "./config.ts";
-import { setErrorHandler } from "./errors.ts";
+import { setErrorHandler } from "./lib/errors.ts";
 
 export async function createApp(): Promise<FastifyInstance> {
   const fastify = Fastify({
@@ -96,7 +93,7 @@ export async function createApp(): Promise<FastifyInstance> {
 
   await fastify.register(healthRoutes);
   await fastify.register(authRoutes, { prefix: "/api/auth" });
-  await fastify.register(usersRoutes, { prefix: "/api" });
+  await fastify.register(userRoutes, { prefix: "/api" });
 
   setErrorHandler(fastify);
 

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 
-export default async function healthRoutes(fastify: FastifyInstance) {
+export async function healthRoutes(fastify: FastifyInstance) {
   fastify.withTypeProvider<ZodTypeProvider>().get(
     "/health",
     {

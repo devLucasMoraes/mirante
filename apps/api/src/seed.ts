@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { config, mongoUri } from "./config.ts";
-import { UserModel } from "./models/User.ts";
-import { hashPassword } from "./services/passwords.ts";
+import { UserModel } from "./models/user.model.ts";
+import { hashPassword } from "./services/password.service.ts";
 
 async function main() {
   await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });

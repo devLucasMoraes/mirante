@@ -2,16 +2,16 @@ import { Types } from "mongoose";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { AppError, isDuplicateKeyError } from "../errors.ts";
-import { UserModel, toUserDTO } from "../models/User.ts";
-import { hashPassword } from "../services/passwords.ts";
-import { authenticate } from "../plugins/auth.ts";
-import { getUserAbility, requireAbility, toUserSubject } from "../authorization.ts";
+import { AppError, isDuplicateKeyError } from "../lib/errors.ts";
+import { UserModel, toUserDTO } from "../models/user.model.ts";
+import { hashPassword } from "../services/password.service.ts";
+import { authenticate } from "../hooks/authenticate.hook.ts";
+import { getUserAbility, requireAbility, toUserSubject } from "../lib/authorization.ts";
 import {
   createUserSchema,
   updateUserSchema,
   userResponseSchema,
-} from "../schemas.ts";
+} from "../schemas/index.ts";
 
 const userParamsSchema = z.object({
   id: z.string(),
@@ -28,7 +28,7 @@ async function findUserOrThrow(id: string) {
   return user;
 }
 
-export default async function usersRoutes(fastify: FastifyInstance) {
+export async function userRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", authenticate);
 
   fastify.withTypeProvider<ZodTypeProvider>().get(
