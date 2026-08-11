@@ -5,9 +5,16 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
 import mongoosePlugin from "./plugins/mongoose.ts";
 import authPlugin from "./plugins/auth.ts";
-import csrfPlugin from "./plugins/csrf.ts";
 import healthRoutes from "./routes/health.ts";
 import authRoutes from "./routes/auth.ts";
 import usersRoutes from "./routes/users.ts";
@@ -15,7 +22,38 @@ import { config, mongoUri } from "./config.ts";
 import { setErrorHandler } from "./errors.ts";
 
 export async function createApp(): Promise<FastifyInstance> {
-  const fastify = Fastify({ logger: true });
+  const fastify = Fastify({
+    logger: {
+      level: process.env.LOG_LEVEL ?? "debug",
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          levelFirst: true,
+          translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+          ignore: "pid,hostname",
+          singleLine: true,
+          customColors:
+            "trace:white,warn:yellow,info:cyan,debug:green,error:red,fatal:red,bgRed",
+        },
+      },
+      serializers: {
+        req(request) {
+          return {
+            method: request.method,
+            url: request.url,
+            remoteAddress: request.ip,
+          };
+        },
+        res(reply) {
+          return { statusCode: reply.statusCode };
+        },
+      },
+    },
+  }).withTypeProvider<ZodTypeProvider>();
+
+  fastify.setValidatorCompiler(validatorCompiler);
+  fastify.setSerializerCompiler(serializerCompiler);
 
   await fastify.register(helmet);
   await fastify.register(cors, {
@@ -31,7 +69,30 @@ export async function createApp(): Promise<FastifyInstance> {
     refreshSecret: config.JWT_REFRESH_SECRET,
     refreshTtl: config.REFRESH_TOKEN_TTL,
   });
-  await fastify.register(csrfPlugin);
+
+  await fastify.register(swagger, {
+    openapi: {
+      info: {
+        title: "My Monorepo API",
+        description: "API do monorepo com autenticação por cookies httpOnly",
+        version: "1.0.0",
+      },
+      components: {
+        securitySchemes: {
+          cookieAuth: {
+            type: "apiKey",
+            in: "cookie",
+            name: "access_token",
+          },
+        },
+      },
+    },
+    transform: jsonSchemaTransform,
+  });
+
+  await fastify.register(swaggerUi, {
+    routePrefix: "/api/docs",
+  });
 
   await fastify.register(healthRoutes);
   await fastify.register(authRoutes, { prefix: "/api/auth" });

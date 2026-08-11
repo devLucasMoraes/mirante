@@ -26,11 +26,14 @@ export function setErrorHandler(fastify: FastifyInstance): void {
       return;
     }
 
-    if (
-      error.validation !== undefined ||
-      (error.statusCode !== undefined && error.statusCode < 500)
-    ) {
-      reply.status(error.statusCode ?? 400).send({ message: error.message });
+    if (error.validation !== undefined) {
+      const message = error.validation[0]?.message ?? error.message;
+      reply.status(error.statusCode ?? 400).send({ message });
+      return;
+    }
+
+    if (error.statusCode !== undefined && error.statusCode < 500) {
+      reply.status(error.statusCode).send({ message: error.message });
       return;
     }
 

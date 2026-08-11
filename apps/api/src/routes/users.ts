@@ -1,5 +1,7 @@
 import { Types } from "mongoose";
 import type { FastifyInstance } from "fastify";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { z } from "zod";
 import { AppError, isDuplicateKeyError } from "../errors.ts";
 import { UserModel, toUserDTO } from "../models/User.ts";
 import { hashPassword } from "../services/passwords.ts";
@@ -9,8 +11,11 @@ import {
   createUserSchema,
   updateUserSchema,
   userResponseSchema,
-  zodFirstMessage,
 } from "../schemas.ts";
+
+const userParamsSchema = z.object({
+  id: z.string(),
+});
 
 async function findUserOrThrow(id: string) {
   if (!Types.ObjectId.isValid(id)) {
@@ -26,13 +31,13 @@ async function findUserOrThrow(id: string) {
 export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", authenticate);
 
-  fastify.get(
+  fastify.withTypeProvider<ZodTypeProvider>().get(
     "/users",
     {
       preHandler: requireAbility("read", "User"),
       schema: {
         response: {
-          200: { type: "array", items: userResponseSchema },
+          200: z.array(userResponseSchema),
         },
       },
     },
@@ -42,20 +47,17 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post(
+  fastify.withTypeProvider<ZodTypeProvider>().post(
     "/users",
     {
       preHandler: requireAbility("create", "User"),
       schema: {
+        body: createUserSchema,
         response: { 201: userResponseSchema },
       },
     },
     async (request, reply) => {
-      const parsed = createUserSchema.safeParse(request.body);
-      if (!parsed.success) {
-        throw new AppError(400, zodFirstMessage(parsed.error));
-      }
-      const { username, name, password, role } = parsed.data;
+      const { username, name, password, role } = request.body;
       const passwordHash = await hashPassword(password);
 
       try {
@@ -75,20 +77,18 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.patch(
+  fastify.withTypeProvider<ZodTypeProvider>().patch(
     "/users/:id",
     {
       schema: {
+        body: updateUserSchema,
+        params: userParamsSchema,
         response: { 200: userResponseSchema },
       },
     },
     async (request) => {
-      const parsed = updateUserSchema.safeParse(request.body);
-      if (!parsed.success) {
-        throw new AppError(400, zodFirstMessage(parsed.error));
-      }
-      const { id } = request.params as { id: string };
-      const data = parsed.data;
+      const { id } = request.params;
+      const data = request.body;
 
       const user = await findUserOrThrow(id);
       const ability = getUserAbility(request.user);
@@ -136,13 +136,16 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete(
+  fastify.withTypeProvider<ZodTypeProvider>().delete(
     "/users/:id",
     {
       preHandler: requireAbility("delete", "User"),
+      schema: {
+        params: userParamsSchema,
+      },
     },
     async (request, reply) => {
-      const { id } = request.params as { id: string };
+      const { id } = request.params;
       if (request.user.id === id) {
         throw new AppError(400, "Você não pode excluir a si mesmo.");
       }

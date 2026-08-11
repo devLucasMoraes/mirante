@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { z } from "zod";
 import { AppError } from "../errors.ts";
 import { UserModel, toUserDTO } from "../models/User.ts";
 import { verifyPassword } from "../services/passwords.ts";
@@ -10,35 +12,24 @@ import {
   getSignedCookie,
   setAuthCookies,
 } from "../services/cookies.ts";
-import {
-  credentialsSchema,
-  userResponseSchema,
-  zodFirstMessage,
-} from "../schemas.ts";
+import { credentialsSchema, userResponseSchema } from "../schemas.ts";
 
 export default async function authRoutes(fastify: FastifyInstance) {
-  fastify.post(
+  fastify.withTypeProvider<ZodTypeProvider>().post(
     "/login",
     {
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
       schema: {
+        body: credentialsSchema,
         response: {
-          200: {
-            type: "object",
-            properties: {
-              user: userResponseSchema,
-            },
-            required: ["user"],
-          },
+          200: z.object({
+            user: userResponseSchema,
+          }),
         },
       },
     },
     async (request, reply) => {
-      const parsed = credentialsSchema.safeParse(request.body);
-      if (!parsed.success) {
-        throw new AppError(400, zodFirstMessage(parsed.error));
-      }
-      const { username, password } = parsed.data;
+      const { username, password } = request.body;
 
       const user = await UserModel.findOne({ username })
         .select("+passwordHash")
@@ -66,12 +57,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post(
+  fastify.withTypeProvider<ZodTypeProvider>().post(
     "/refresh",
     {
       schema: {
         response: {
-          204: { type: "null" },
+          204: z.void(),
         },
       },
     },
@@ -93,12 +84,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post(
+  fastify.withTypeProvider<ZodTypeProvider>().post(
     "/logout",
     {
       schema: {
         response: {
-          204: { type: "null" },
+          204: z.void(),
         },
       },
     },

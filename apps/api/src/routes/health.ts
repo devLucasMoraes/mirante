@@ -1,18 +1,17 @@
 import type { FastifyInstance } from "fastify";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { z } from "zod";
 
 export default async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get(
+  fastify.withTypeProvider<ZodTypeProvider>().get(
     "/health",
     {
       schema: {
         response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              db: { type: "number" },
-            },
-          },
+          200: z.object({
+            status: z.string(),
+            db: z.number(),
+          }),
         },
       },
     },

@@ -32,16 +32,11 @@ export const updateUserSchema = z.object({
 
 export type UpdateUserPayload = z.infer<typeof updateUserSchema>;
 
-export const userResponseSchema = {
-  type: "object",
-  properties: {
-    id: { type: "string" },
-    username: { type: "string" },
-    name: { type: "string" },
-    role: { type: "string", enum: USER_ROLES },
-  },
-} as const;
+export const userResponseSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  name: z.string(),
+  role: z.enum(USER_ROLES),
+});
 
-export function zodFirstMessage(error: z.ZodError): string {
-  return error.issues[0]?.message ?? "Dados inválidos.";
-}
+export type UserResponse = z.infer<typeof userResponseSchema>;
