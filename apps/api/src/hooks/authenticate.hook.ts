@@ -1,4 +1,5 @@
 import type { FastifyRequest } from "fastify";
+
 import { AppError } from "../lib/errors.ts";
 import { COOKIE_NAMES, getSignedCookie } from "../services/cookie.service.ts";
 import type { JwtUser } from "../types/fastify.ts";

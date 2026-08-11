@@ -1,22 +1,23 @@
-import Fastify from "fastify";
-import type { FastifyInstance } from "fastify";
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
-import rateLimit from "@fastify/rate-limit";
-import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
+import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import type { FastifyInstance } from "fastify";
+import Fastify from "fastify";
 import {
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
-import { mongoosePlugin, authPlugin } from "./plugins/index.ts";
-import { healthRoutes, authRoutes, userRoutes } from "./routes/index.ts";
+
 import { config, mongoUri } from "./config.ts";
 import { setErrorHandler } from "./lib/errors.ts";
+import { authPlugin,mongoosePlugin } from "./plugins/index.ts";
+import { authRoutes, healthRoutes, userRoutes } from "./routes/index.ts";
 
 export async function createApp(): Promise<FastifyInstance> {
   const fastify = Fastify({

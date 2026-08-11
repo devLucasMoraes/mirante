@@ -1,6 +1,6 @@
-export { AppError, isDuplicateKeyError, setErrorHandler } from "./errors.ts";
 export {
   getUserAbility,
-  toUserSubject,
   requireAbility,
+  toUserSubject,
 } from "./authorization.ts";
+export { AppError, isDuplicateKeyError, setErrorHandler } from "./errors.ts";

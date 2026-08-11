@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+
 import { config } from "../config.ts";
 
 const TTL_MS = { s: 1_000, m: 60_000, h: 3_600_000, d: 86_400_000 } as const;

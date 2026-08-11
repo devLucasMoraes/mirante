@@ -1,18 +1,19 @@
-import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { AppError } from "../lib/errors.ts";
-import { UserModel, toUserDTO } from "../models/user.model.ts";
-import { verifyPassword } from "../services/password.service.ts";
+
 import { config } from "../config.ts";
+import { AppError } from "../lib/errors.ts";
+import { toUserDTO,UserModel } from "../models/user.model.ts";
+import { credentialsSchema, userResponseSchema } from "../schemas/index.ts";
 import {
-  COOKIE_NAMES,
   clearAuthCookies,
+  COOKIE_NAMES,
   getSignedCookie,
   setAuthCookies,
 } from "../services/cookie.service.ts";
-import { credentialsSchema, userResponseSchema } from "../schemas/index.ts";
+import { verifyPassword } from "../services/password.service.ts";
 
 export async function authRoutes(fastify: FastifyInstance) {
   fastify.withTypeProvider<ZodTypeProvider>().post(

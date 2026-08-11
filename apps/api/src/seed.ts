@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 import { config, mongoUri } from "./config.ts";
 import { UserModel } from "./models/user.model.ts";
 import { hashPassword } from "./services/password.service.ts";

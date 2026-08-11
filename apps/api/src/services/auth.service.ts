@@ -1,10 +1,11 @@
-import { randomUUID } from "node:crypto";
-import type { Types } from "mongoose";
 import type { FastifyInstance } from "fastify";
+import type { Types } from "mongoose";
+import { randomUUID } from "node:crypto";
+
 import { config } from "../config.ts";
 import { AppError } from "../lib/errors.ts";
 import { RefreshTokenModel } from "../models/refresh-token.model.ts";
-import { UserModel, toUserDTO } from "../models/user.model.ts";
+import { toUserDTO,UserModel } from "../models/user.model.ts";
 import type {
   AuthService,
   AuthServiceOptions,

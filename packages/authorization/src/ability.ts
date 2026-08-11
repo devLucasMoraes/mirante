@@ -2,7 +2,8 @@ import {
   AbilityBuilder,
   type RawRuleOf,
 } from "@casl/ability";
-import { createAppAbility, type AppAbility } from "./abilities.ts";
+
+import { type AppAbility,createAppAbility } from "./abilities.ts";
 import type { User, UserRole } from "./schemas.ts";
 
 export function defineRulesFor(role: UserRole): RawRuleOf<AppAbility>[] {

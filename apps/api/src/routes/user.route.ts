@@ -1,17 +1,18 @@
-import { Types } from "mongoose";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { Types } from "mongoose";
 import { z } from "zod";
-import { AppError, isDuplicateKeyError } from "../lib/errors.ts";
-import { UserModel, toUserDTO } from "../models/user.model.ts";
-import { hashPassword } from "../services/password.service.ts";
+
 import { authenticate } from "../hooks/authenticate.hook.ts";
 import { getUserAbility, requireAbility, toUserSubject } from "../lib/authorization.ts";
+import { AppError, isDuplicateKeyError } from "../lib/errors.ts";
+import { toUserDTO,UserModel } from "../models/user.model.ts";
 import {
   createUserSchema,
   updateUserSchema,
   userResponseSchema,
 } from "../schemas/index.ts";
+import { hashPassword } from "../services/password.service.ts";
 
 const userParamsSchema = z.object({
   id: z.string(),

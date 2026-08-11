@@ -1,14 +1,16 @@
 import type { FastifyRequest } from "fastify";
+
 import {
-  defineAbilityFor,
-  userSchema,
-  type AppAbility,
   type AppAbilities,
+  type AppAbility,
+  defineAbilityFor,
   type User,
+  userSchema,
 } from "@repo/authorization";
-import { AppError } from "./errors.ts";
-import type { JwtUser } from "../types/fastify.ts";
+
 import type { UserDTO } from "../models/user.model.ts";
+import type { JwtUser } from "../types/fastify.ts";
+import { AppError } from "./errors.ts";
 
 export function getUserAbility(user: JwtUser): AppAbility {
   return defineAbilityFor(userSchema.parse({ ...user }));

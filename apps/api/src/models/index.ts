@@ -1,15 +1,14 @@
 export {
-  USER_ROLES,
-  UserModel,
-  toUserDTO,
-  type UserRole,
-  type UserFields,
-  type UserDTO,
-  type UserDoc,
-} from "./user.model.ts";
-
-export {
-  RefreshTokenModel,
-  type RefreshTokenFields,
   type RefreshTokenDoc,
+  type RefreshTokenFields,
+  RefreshTokenModel,
 } from "./refresh-token.model.ts";
+export {
+  toUserDTO,
+  USER_ROLES,
+  type UserDoc,
+  type UserDTO,
+  type UserFields,
+  UserModel,
+  type UserRole,
+} from "./user.model.ts";

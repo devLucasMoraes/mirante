@@ -1,5 +1,6 @@
-import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
+import fp from "fastify-plugin";
+
 import { createAuthService } from "../services/auth.service.ts";
 import type { AuthServiceOptions } from "../types/fastify.ts";
 

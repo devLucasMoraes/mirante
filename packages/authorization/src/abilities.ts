@@ -1,9 +1,10 @@
 import {
-  createMongoAbility,
   type CreateAbility,
+  createMongoAbility,
   type MongoAbility,
 } from "@casl/ability";
 import { z } from "zod";
+
 import { userSubject } from "./subjects/user.ts";
 
 export const appAbilities = z.union([

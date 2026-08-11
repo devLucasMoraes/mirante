@@ -1,6 +1,6 @@
+import dotenv from "dotenv";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import dotenv from "dotenv";
 import { z } from "zod";
 
 const rootEnvFile = path.resolve(

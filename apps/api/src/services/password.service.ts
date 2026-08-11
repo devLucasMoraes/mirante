@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+
 import { config } from "../config.ts";
 
 export function hashPassword(plain: string): Promise<string> {

@@ -1,5 +1,5 @@
-import { Schema, model } from "mongoose";
 import type { HydratedDocument, Types } from "mongoose";
+import { model,Schema } from "mongoose";
 
 export const USER_ROLES = ["admin", "user"] as const;
 export type UserRole = (typeof USER_ROLES)[number];

@@ -1,51 +1,13 @@
-import { Route, Routes } from "react-router";
-import { ProtectedRoute } from "./routes/ProtectedRoute";
-import { PublicRoute } from "./routes/PublicRoute";
-import { AdminRoute } from "./routes/AdminRoute";
-import { HomePage } from "./pages/HomePage";
-import { LoginPage } from "./pages/LoginPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { UsersPage } from "./pages/UsersPage";
-import { UnauthorizedPage } from "./pages/UnauthorizedPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { PublicLayout } from "./components/layout/public-layout";
-import { AuthLayout } from "./components/layout/auth-layout";
-import { DashboardShell } from "./components/layout/dashboard-shell";
-import { ThemeProvider } from "./theme/theme-provider";
-import { Toaster } from "./components/theme/toaster";
-import { AppAbilityProvider } from "./auth/ability-provider";
+import { AppProviders } from "./app/providers";
+import { AppRoutes } from "./app/routes";
+import { Toaster } from "./features/theme/toaster";
 
 function App() {
   return (
-    <ThemeProvider>
-      <AppAbilityProvider>
-        <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-
-          <Route element={<AuthLayout />}>
-            <Route element={<PublicRoute />}>
-              <Route path="/login" element={<LoginPage />} />
-            </Route>
-          </Route>
-
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardShell />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/dashboard/perfil" element={<ProfilePage />} />
-              <Route element={<AdminRoute />}>
-                <Route path="/dashboard/usuarios" element={<UsersPage />} />
-              </Route>
-            </Route>
-          </Route>
-        </Routes>
-        <Toaster />
-      </AppAbilityProvider>
-    </ThemeProvider>
+    <AppProviders>
+      <AppRoutes />
+      <Toaster />
+    </AppProviders>
   );
 }
 
