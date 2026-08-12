@@ -104,8 +104,12 @@ export function UserFormSheet({
       setError("As senhas não coincidem.");
       return;
     }
-    const payload = createUserSchema.parse(form);
-    createMutation.mutate(payload, {
+    const result = createUserSchema.safeParse(form);
+    if (!result.success) {
+      setError(getErrorMessage(result.error));
+      return;
+    }
+    createMutation.mutate(result.data, {
       onSuccess: () => {
         toast.success("Usuário criado com sucesso!");
         onOpenChange(false);
@@ -228,6 +232,15 @@ export function UserFormSheet({
             ) : (
               "Criar usuário"
             )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting}
+            onClick={() => onOpenChange(false)}
+            className="w-full"
+          >
+            Cancelar
           </Button>
         </SheetFooter>
       </SheetContent>

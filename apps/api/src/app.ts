@@ -57,6 +57,7 @@ export async function createApp(): Promise<FastifyInstance> {
   await fastify.register(cors, {
     origin: config.CORS_ORIGIN,
     credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE"],
   });
   await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await fastify.register(cookie, { secret: config.COOKIE_SECRET });

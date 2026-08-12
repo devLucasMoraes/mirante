@@ -1,5 +1,6 @@
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
+import { toast } from "sonner";
 
 import { useAuthStore } from "@/features/auth/auth.store";
 
@@ -47,6 +48,7 @@ async function performRefresh(): Promise<boolean> {
     await api.post("/auth/refresh");
     return true;
   } catch {
+    toast.error("Sessão expirada. Faça login novamente.");
     await logout();
     return false;
   }

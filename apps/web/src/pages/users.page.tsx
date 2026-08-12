@@ -20,7 +20,7 @@ import { getErrorMessage } from "@/lib/error-message";
 
 export function UsersPage() {
   const currentUser = useAuthStore((state) => state.user);
-  const { data: users, isPending, isError, error } = useUsersQuery();
+  const { data: users, isPending, isError, error, refetch } = useUsersQuery();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
 
@@ -35,7 +35,7 @@ export function UsersPage() {
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
@@ -52,10 +52,20 @@ export function UsersPage() {
       {isError ? (
         <div
           role="alert"
-          className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="flex flex-col items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive sm:flex-row sm:items-center"
         >
-          <TriangleAlert className="size-4 shrink-0" />
-          {getErrorMessage(error)}
+          <div className="flex flex-1 items-center gap-2">
+            <TriangleAlert className="size-4 shrink-0" />
+            {getErrorMessage(error)}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            className="border-destructive/40 text-destructive hover:text-destructive"
+          >
+            Tentar novamente
+          </Button>
         </div>
       ) : null}
 
@@ -74,9 +84,18 @@ export function UsersPage() {
               Carregando usuários...
             </div>
           ) : isError || users === undefined ? null : users.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
               <Users className="size-6" />
-              Nenhum usuário cadastrado ainda.
+              <p>Nenhum usuário cadastrado ainda.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openCreate}
+                className="mt-1"
+              >
+                <Plus />
+                Criar primeiro usuário
+              </Button>
             </div>
           ) : (
             <UsersTable
@@ -93,6 +112,6 @@ export function UsersPage() {
         onOpenChange={setSheetOpen}
         editing={editing}
       />
-    </>
+    </div>
   );
 }
