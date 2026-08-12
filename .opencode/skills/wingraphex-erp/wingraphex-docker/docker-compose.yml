@@ -1,0 +1,26 @@
+services:
+  wingraphex-db:
+    image: mysql:5.7.26
+    container_name: wingraphex-db
+    command:
+      - --character-set-server=latin1
+      - --collation-server=latin1_swedish_ci
+    environment:
+      MYSQL_DATABASE: wingraphex
+      MYSQL_USER: _consulta
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
+      - wingraphex-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "--protocol=socket"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  wingraphex-data:
