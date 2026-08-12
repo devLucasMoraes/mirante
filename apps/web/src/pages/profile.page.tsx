@@ -16,8 +16,8 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 
-import { updateUser } from "@/api/users.api";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { useUpdateUserMutation } from "@/features/users/users.queries";
 import { updateProfileSchema } from "@/features/users/users.schemas";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -25,12 +25,12 @@ export function ProfilePage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const ability = useAbility();
+  const updateMutation = useUpdateUserMutation();
 
   const [name, setName] = useState(user?.name ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -43,7 +43,7 @@ export function ProfilePage() {
   const canUpdateName = ability.can("update", user, "name");
   const canUpdatePassword = ability.can("update", user, "password");
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
@@ -66,19 +66,19 @@ export function ProfilePage() {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const updated = await updateUser(user.id, parsed.data);
-      setUser(updated);
-      setName(updated.name);
-      setPassword("");
-      setConfirmPassword("");
-      toast.success("Perfil atualizado com sucesso!");
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setSubmitting(false);
-    }
+    updateMutation.mutate(
+      { id: user.id, payload: parsed.data },
+      {
+        onSuccess: (updated) => {
+          setUser(updated);
+          setName(updated.name);
+          setPassword("");
+          setConfirmPassword("");
+          toast.success("Perfil atualizado com sucesso!");
+        },
+        onError: (err) => setError(getErrorMessage(err)),
+      },
+    );
   };
 
   return (
@@ -137,7 +137,7 @@ export function ProfilePage() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required
-                  disabled={submitting}
+                  disabled={updateMutation.isPending}
                 />
               </div>
             ) : null}
@@ -152,7 +152,7 @@ export function ProfilePage() {
                   placeholder="Deixe em branco para manter"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  disabled={submitting}
+                  disabled={updateMutation.isPending}
                 />
               </div>
             ) : null}
@@ -167,13 +167,13 @@ export function ProfilePage() {
                   placeholder="Repita a nova senha"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  disabled={submitting}
+                  disabled={updateMutation.isPending}
                 />
               </div>
             ) : null}
 
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? (
+            <Button type="submit" disabled={updateMutation.isPending} className="w-full">
+              {updateMutation.isPending ? (
                 <>
                   <Loader2 className="animate-spin" />
                   Salvando...

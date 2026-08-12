@@ -15,9 +15,9 @@ import {
   SheetTitle,
 } from "@repo/ui/components/sheet";
 
-import { createUser, updateUser } from "@/api/users.api";
 import { getErrorMessage } from "@/lib/error-message";
 
+import { useCreateUserMutation, useUpdateUserMutation } from "./users.queries";
 import type { User, UserRole } from "./users.schemas";
 import { createUserSchema } from "./users.schemas";
 
@@ -41,16 +41,16 @@ export function UserFormSheet({
   open,
   onOpenChange,
   editing,
-  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: User | null;
-  onSaved: () => void;
 }) {
+  const createMutation = useCreateUserMutation();
+  const updateMutation = useUpdateUserMutation();
+  const submitting = createMutation.isPending || updateMutation.isPending;
   const [form, setForm] = useState<UserFormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -74,35 +74,44 @@ export function UserFormSheet({
   const set = (field: keyof UserFormState) => (value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    setSubmitting(true);
-    try {
-      if (isEditing) {
-        await updateUser(editing.id, {
-          username: form.username,
-          name: form.name,
-          password: form.password || undefined,
-          role: form.role,
-        });
-        toast.success("Usuário atualizado com sucesso!");
-      } else {
-        if (form.password !== form.confirmPassword) {
-          setError("As senhas não coincidem.");
-          return;
-        }
-        const payload = createUserSchema.parse(form);
-        await createUser(payload);
-        toast.success("Usuário criado com sucesso!");
-      }
-      onSaved();
-      onOpenChange(false);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setSubmitting(false);
+
+    if (isEditing) {
+      updateMutation.mutate(
+        {
+          id: editing.id,
+          payload: {
+            username: form.username,
+            name: form.name,
+            password: form.password || undefined,
+            role: form.role,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success("Usuário atualizado com sucesso!");
+            onOpenChange(false);
+          },
+          onError: (err) => setError(getErrorMessage(err)),
+        },
+      );
+      return;
     }
+
+    if (form.password !== form.confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+    const payload = createUserSchema.parse(form);
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Usuário criado com sucesso!");
+        onOpenChange(false);
+      },
+      onError: (err) => setError(getErrorMessage(err)),
+    });
   };
 
   return (

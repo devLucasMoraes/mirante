@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Loader2, Plus, TriangleAlert, Users } from "lucide-react";
 
@@ -11,32 +11,18 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 
-import { listUsers } from "@/api/users.api";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { UserFormSheet } from "@/features/users/user-form-sheet";
+import { useUsersQuery } from "@/features/users/users.queries";
 import type { User } from "@/features/users/users.schemas";
 import { UsersTable } from "@/features/users/users-table";
 import { getErrorMessage } from "@/lib/error-message";
 
 export function UsersPage() {
   const currentUser = useAuthStore((state) => state.user);
-  const [users, setUsers] = useState<User[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: users, isPending, isError, error } = useUsersQuery();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-
-  const loadUsers = useCallback(async () => {
-    try {
-      setUsers(await listUsers());
-      setError(null);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadUsers();
-  }, [loadUsers]);
 
   const openCreate = () => {
     setEditing(null);
@@ -63,13 +49,13 @@ export function UsersPage() {
         </Button>
       </div>
 
-      {error ? (
+      {isError ? (
         <div
           role="alert"
           className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           <TriangleAlert className="size-4 shrink-0" />
-          {error}
+          {getErrorMessage(error)}
         </div>
       ) : null}
 
@@ -82,12 +68,12 @@ export function UsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {users === null ? (
+          {isPending ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="animate-spin" />
               Carregando usuários...
             </div>
-          ) : users.length === 0 ? (
+          ) : isError || users === undefined ? null : users.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
               <Users className="size-6" />
               Nenhum usuário cadastrado ainda.
@@ -97,7 +83,6 @@ export function UsersPage() {
               users={users}
               currentUserId={currentUser?.id}
               onEdit={openEdit}
-              onChanged={loadUsers}
             />
           )}
         </CardContent>
@@ -107,7 +92,6 @@ export function UsersPage() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         editing={editing}
-        onSaved={loadUsers}
       />
     </>
   );

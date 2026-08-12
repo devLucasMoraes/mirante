@@ -12,23 +12,23 @@ import {
   TableRow,
 } from "@repo/ui/components/table";
 
-import { deleteUser } from "@/api/users.api";
 import { getErrorMessage } from "@/lib/error-message";
 
+import { useDeleteUserMutation } from "./users.queries";
 import type { User } from "./users.schemas";
 
 export function UsersTable({
   users,
   currentUserId,
   onEdit,
-  onChanged,
 }: {
   users: User[];
   currentUserId?: string;
   onEdit: (user: User) => void;
-  onChanged: () => void;
 }) {
-  const handleDelete = async (user: User) => {
+  const deleteMutation = useDeleteUserMutation();
+
+  const handleDelete = (user: User) => {
     if (user.id === currentUserId) {
       toast.error("Você não pode excluir o seu próprio usuário.");
       return;
@@ -36,13 +36,14 @@ export function UsersTable({
     if (!window.confirm(`Excluir o usuário "${user.username}"?`)) {
       return;
     }
-    try {
-      await deleteUser(user.id);
-      toast.success("Usuário excluído.");
-      onChanged();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
+    deleteMutation.mutate(user.id, {
+      onSuccess: () => {
+        toast.success("Usuário excluído.");
+      },
+      onError: (err) => {
+        toast.error(getErrorMessage(err));
+      },
+    });
   };
 
   return (
