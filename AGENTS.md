@@ -22,6 +22,21 @@
 - `packages/eslint-config` — shared configs (`base`, `react-internal`); `packages/typescript-config` — shared `tsconfig` presets.
 - `packages/authorization` (`@repo/authorization`) — shared CASL abilities and zod subjects (`src/ability.ts` holds the rules). No build step; consumed as source by both `web` (Vite) and `api` (Node 24 type-stripping). Because the API executes it under Node, its relative imports use explicit `.ts` extensions and `package.json` sets `"type": "module"` — preserve both when editing it.
 
+## Wingraphex — banco legado (réplica local em Docker)
+
+- Réplica local do ERP Wingraphex (gráfica, MySQL 5.7.26, latin1): **`docker-compose.wingraphex.yml`** (serviço `wingraphex-db`, porta host **3308**). Assets em **`docker/wingraphex/`**: `initdb/01-schema.sql` (557 tabelas, sem dados) + `initdb/02-dados.sql` (amostra real, 42 tabelas), `scripts/extrai-dados.sh` (regenera a amostra) e `.env.example` → `.env` (gitignorado).
+- Produção original: `192.168.1.16:3307` (nunca confundir com a réplica 3308). **Acesso ao banco é estritamente somente leitura** (SELECT/SHOW/information_schema — nunca DML/DDL), na réplica e na produção.
+- Subir a réplica (1ª vez popula o volume):
+  ```sh
+  cp docker/wingraphex/.env.example docker/wingraphex/.env   # se ainda não existe
+  `pnpm db:wingraphex:up`                                    # demais scripts: db:wingraphex:down / :reset / :logs
+  ```
+  Aguardar "ready for connections" no `docker logs wingraphex-db`; o healthcheck pode passar antes do initdb terminar.
+- Conectar na réplica: `mysql --ssl-mode=DISABLED --default-character-set=utf8 -h 127.0.0.1 -P 3308 -u _consulta wingraphex` (senha em `docker/wingraphex/.env`).
+- Regenerar a amostra (somente leitura contra a produção): `docker/wingraphex/scripts/extrai-dados.sh` — le `WINGRAPHEX_READ_PASSWORD` de `docker/wingraphex/.env`.
+- Conhecimento de schema/relatórios/fluxos: skill `wingraphex-erp` (`.opencode/skills/wingraphex-erp/`, references + `schema-wingraphex.sql`). Sem FKs declaradas; `EMP_ID` sempre no WHERE; usar `--default-character-set=utf8`.
+- `docker/wingraphex/.env` guarda também a senha de produção (`WINGRAPHEX_READ_PASSWORD`) — nunca commitar (`docker/wingraphex/.env` é ignorado pelo `.gitignore`).
+
 ## Gotchas
 - TS presets enable `verbatimModuleSyntax`, `strict`, and `noUncheckedIndexedAccess` — use `import type` for type-only imports and narrow nullable array/object access. This applies to `packages/ui` too (typechecked from the app's project references).
 - `turbo.json` marks `dev` tasks as persistent and uncached; `build` outputs `dist/**` and consumes `.env*` inputs.

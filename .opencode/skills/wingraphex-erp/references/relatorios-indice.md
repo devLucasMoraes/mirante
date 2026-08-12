@@ -9,8 +9,8 @@ de cristalizar). Um arquivo por relatório em `relatorios/`.
 - Se não existir: montar o SQL com base no conhecimento (`regras-de-negocio.md`,
   `esqueleto-schema.md`, `modulo-*.md`, `schema-wingraphex.sql`), executar **somente leitura** e
   apresentar o resultado real.
-- Banco: `wingraphex` em `192.168.1.16:3307`, usuário `_consulta`, senha em `senha.txt`
-  (gitignored, nunca colar em texto puro).
+- Banco: `wingraphex` em `192.168.1.16:3307`, usuário `_consulta`, senha em
+  `WINGRAPHEX_READ_PASSWORD` de `docker/wingraphex/.env` (gitignored, nunca colar em texto puro).
 - Sempre usar `--default-character-set=utf8` (banco é latin1 — sem isso a acentuação quebra).
 
 ## Formato padrão de cada arquivo em `relatorios/`

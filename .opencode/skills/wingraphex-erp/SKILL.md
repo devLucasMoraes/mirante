@@ -17,11 +17,12 @@ relevante(s) para a tarefa atual, não todos.
   `information_schema`.
 - Comando padrão de execução:
   ```bash
-  MYSQL_PWD="$(awk -F'= ' '/senha/{print $2}' senha.txt)" \
+  MYSQL_PWD="$(awk -F= '/^WINGRAPHEX_READ_PASSWORD=/{print $2}' docker/wingraphex/.env)" \
   mysql --default-character-set=utf8 -h 192.168.1.16 -P 3307 -u _consulta wingraphex -e "<SQL>"
   ```
   `--default-character-set=utf8` é **obrigatório** (banco é latin1, sem isso acentuação quebra).
-  Nunca colar a senha em texto puro — ler de `senha.txt` (fora do controle de versão).
+  Nunca colar a senha em texto puro — ler de `WINGRAPHEX_READ_PASSWORD` em `docker/wingraphex/.env`
+  (na raiz do monorepo; `.env` é gitignorado).
 - Sem FKs declaradas no banco — todo relacionamento é por convenção de chave
   (colunas com índice MUL). Ver `references/esqueleto-schema.md` para o mapa.
 - `EMP_ID` sempre no WHERE (empresas 1 e 2, cadastros duplicados) — sem isso
@@ -62,10 +63,10 @@ relevante(s) para a tarefa atual, não todos.
    `references/infra-acesso.md`.
 
 6. **Ambiente local/Docker** (testar SQL sem tocar produção, subir réplica, regenerar amostra de
-   dados) → `references/ambiente-docker-local.md`. Os arquivos brutos ficam em
-   `wingraphex-docker/` (raiz da skill, irmã de `references/`) — nunca ler
-   `wingraphex-docker/initdb/01-schema.sql` ou `02-dados.sql` inteiros (627 KB / 4 MB); usar grep
-   ou consultar via `mysql` no container local.
+   dados) → `references/ambiente-docker-local.md`. Os arquivos brutos ficam na **raiz do monorepo**
+   (`docker/wingraphex/` + `docker-compose.wingraphex.yml`) — nunca ler
+   `docker/wingraphex/initdb/01-schema.sql` ou `02-dados.sql` inteiros (627 KB / 4 MB); usar grep
+   ou consultar via `mysql` no container local (porta 3308).
 
 ## Mapa de references/
 
@@ -83,15 +84,15 @@ relevante(s) para a tarefa atual, não todos.
 | `ambiente-docker-local.md` | Réplica Docker local (MySQL 5.7.26, porta 3308), como subir/regenerar, quando usar local vs produção |
 | `schema-wingraphex.sql` | DDL bruto completo de produção (mysqldump --no-data), 558 tabelas — usar via grep, nunca ler inteiro |
 
-## wingraphex-docker/ (raiz da skill — arquivos brutos do ambiente local)
+## Ambiente local (raiz do monorepo — arquivos brutos da réplica em `docker/wingraphex/`)
 
 | Arquivo | Conteúdo |
 |---|---|
-| `wingraphex-docker/docker-compose.yml` | Serviço MySQL 5.7.26 (porta host 3308) |
-| `wingraphex-docker/.env.example` | Modelo de variáveis (copiar para `.env`, nunca commitar) |
-| `wingraphex-docker/initdb/01-schema.sql` | Schema completo (557 tabelas), sem dados — **grande, não ler inteiro** |
-| `wingraphex-docker/initdb/02-dados.sql` | Amostra real de dados (42 tabelas) — **grande, não ler inteiro** |
-| `wingraphex-docker/scripts/extrai-dados.sh` | Gera `02-dados.sql` a partir da produção (somente leitura) — pequeno, pode ler direto se precisar ver os filtros exatos |
+| `docker-compose.wingraphex.yml` (raiz) | Serviço MySQL 5.7.26 (porta host 3308) |
+| `docker/wingraphex/.env.example` | Modelo de variáveis (copiar para `.env`, nunca commitar) |
+| `docker/wingraphex/initdb/01-schema.sql` | Schema completo (557 tabelas), sem dados — **grande, não ler inteiro** |
+| `docker/wingraphex/initdb/02-dados.sql` | Amostra real de dados (42 tabelas) — **grande, não ler inteiro** |
+| `docker/wingraphex/scripts/extrai-dados.sh` | Gera `02-dados.sql` a partir da produção (somente leitura) — pequeno, pode ler direto se precisar ver os filtros exatos |
 
 ## Protocolo de aprendizado (registro de novas descobertas)
 

@@ -40,7 +40,7 @@ ORDER BY os.ORS_DATA, os.ORS_ID;
 
 ## Como reproduzir
 ```bash
-MYSQL_PWD="$(awk -F'= ' '/senha/{print $2}' senha.txt)" \
+MYSQL_PWD="$(awk -F= '/^WINGRAPHEX_READ_PASSWORD=/{print $2}' docker/wingraphex/.env)" \
 mysql --default-character-set=utf8 -h 192.168.1.16 -P 3307 -u _consulta wingraphex -e "<SQL>"
 ```
 > `--default-character-set=utf8` é obrigatório para acentuação legível (banco latin1).

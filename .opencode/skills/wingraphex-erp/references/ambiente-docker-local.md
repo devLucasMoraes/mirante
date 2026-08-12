@@ -1,20 +1,21 @@
 # Ambiente Docker local — wingraphex (réplica de teste)
 
 Réplica local (Docker) do banco de produção, para testar SQL sem tocar em produção. Os arquivos
-brutos ficam em `../wingraphex-docker/` (pasta irmã de `references/`, na raiz da skill) — **não
-ler `initdb/01-schema.sql` nem `initdb/02-dados.sql` inteiros**, são grandes (627 KB / 4 MB); usar
-grep ou o próprio MySQL local para consultá-los.
+brutos ficam na **raiz do monorepo**: `docker/wingraphex/` (pasta irmã de `apps/`, `docker/`,
+`.opencode/`) + `docker-compose.wingraphex.yml` — **nao ler `initdb/01-schema.sql` nem
+`initdb/02-dados.sql` inteiros**, são grandes (627 KB / 4 MB); usar grep ou o próprio MySQL local
+para consultá-los.
 
 ## Estrutura de arquivos
 ```
-wingraphex-docker/
-├── docker-compose.yml       → serviço MySQL 5.7.26, porta host 3308
-├── .env.example              → modelo de variáveis (copiar para .env, nunca commitar .env)
+docker-compose.wingraphex.yml   → serviço MySQL 5.7.26, porta host 3308
+docker/wingraphex/
+├── .env.example                 → modelo de variáveis (copiar para .env, nunca commitar .env)
 ├── initdb/
-│   ├── 01-schema.sql         → schema completo (557 tabelas), sem dados
-│   └── 02-dados.sql          → amostra REAL de dados (42 tabelas), gerada por extrai-dados.sh
+│   ├── 01-schema.sql            → schema completo (557 tabelas), sem dados
+│   └── 02-dados.sql             → amostra REAL de dados (42 tabelas), gerada por extrai-dados.sh
 └── scripts/
-    └── extrai-dados.sh       → gera 02-dados.sql a partir da produção (somente leitura)
+    └── extrai-dados.sh          → gera 02-dados.sql a partir da produção (somente leitura)
 ```
 
 ## 2026-08-12 — Réplica MySQL 5.7.26 com schema completo + amostra real
@@ -25,11 +26,11 @@ wingraphex-docker/
 - **Como reproduzir:**
   - Extrair amostra nova (somente leitura, gera `initdb/02-dados.sql`):
     ```bash
-    MYSQL_PWD="..." ./wingraphex-docker/scripts/extrai-dados.sh
+    ./docker/wingraphex/scripts/extrai-dados.sh   # le WINGRAPHEX_READ_PASSWORD de docker/wingraphex/.env
     ```
   - Subir o ambiente (1ª vez popula o volume):
     ```bash
-    docker compose -f wingraphex-docker/docker-compose.yml up -d
+    docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env up -d
     ```
   - Aguardar healthy (o healthcheck pode passar cedo; conferir `docker logs` por "ready for connections").
   - Conexão local:
@@ -40,7 +41,8 @@ wingraphex-docker/
   - **Imagem:** `mysql:5.7.26` (mesma versão da produção). Servidor iniciado com
     `--character-set-server=latin1 --collation-server=latin1_swedish_ci` (espelha produção).
   - **Porta:** host **3308** → container 3306 (produção usa 3307; nunca confundir as duas). Usuário
-    local `_consulta`; senhas de dev só no `.env` (copiar de `.env.example`, nunca colar em texto puro).
+    local `_consulta`; senhas de dev só no `docker/wingraphex/.env` (copiar de `.env.example`, nunca
+    colar em texto puro).
   - **Validação:** `SELECT VERSION()` = 5.7.26; 557 tabelas (552 InnoDB + 5 MyISAM); collation
     `latin1_swedish_ci`; acentuação round-trip OK com `--default-character-set=utf8`; relatório
     validado `ops-em-aberto` (cliente 5011) retorna OP 161816 igual ao esperado.
@@ -62,7 +64,7 @@ wingraphex-docker/
     extração. Ao validar um relatório contra o ambiente local, checar a data da extração antes de
     apontar divergência como erro.
   - Se refazer o ambiente com `02-dados.sql` novo, apagar o volume:
-    `docker compose -f wingraphex-docker/docker-compose.yml down -v`.
+    `docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env down -v`.
 
 ## Quando usar o ambiente local vs produção
 - **Testar/depurar um SQL novo antes de rodar em produção** → ambiente local (3308). Mais seguro
@@ -70,12 +72,12 @@ wingraphex-docker/
 - **Relatório precisa da carteira completa/dados atuais** → produção (3307) — a amostra local só
   tem as ~11 pessoas e documentos listados acima, não serve para ABC de carteira inteira.
 - **Ampliar a amostra local** (mais clientes/tabelas) → editar as variáveis `DOCS`/`OPS`/`ORCS`/`PESSOAS`
-  no topo de `scripts/extrai-dados.sh` e rodar de novo.
+  no topo de `docker/wingraphex/scripts/extrai-dados.sh` e rodar de novo.
 
 ## Script `extrai-dados.sh` — o que ele faz
 Gera `initdb/02-dados.sql` via `mysqldump --no-create-info --single-transaction --skip-lock-tables`
 (somente leitura, sem LOCK TABLES) filtrando por listas fixas de `DOC_ID`/`ORS_ID`/`ORC_ID`/`PES_ID`
 no topo do arquivo. Cobre, na ordem: cadastros (pessoa/cliente/vendedor) → orçamento → OP/PCP →
 faturamento → financeiro → estoque → tabelas de apoio/infra (`_dicionario`, parâmetros). Para ver a
-lista exata de tabelas e filtros, ler `../wingraphex-docker/scripts/extrai-dados.sh` diretamente
-(arquivo pequeno, ~130 linhas) — não precisa desta reference repetir o script inteiro.
+lista exata de tabelas e filtros, ler `../../../docker/wingraphex/scripts/extrai-dados.sh`
+diretamente (arquivo pequeno, ~130 linhas) — não precisa desta reference repetir o script inteiro.

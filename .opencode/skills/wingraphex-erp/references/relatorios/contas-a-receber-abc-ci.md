@@ -61,7 +61,7 @@ WHERE f.EMP_ID=1 AND f.ORIGEM='TOL_CONTASARECEBER' AND f.SALDO>0
 
 ## Como reproduzir
 ```bash
-MYSQL_PWD="$(awk -F'= ' '/senha/{print $2}' senha.txt)" \
+MYSQL_PWD="$(awk -F= '/^WINGRAPHEX_READ_PASSWORD=/{print $2}' docker/wingraphex/.env)" \
 mysql --default-character-set=utf8 -h 192.168.1.16 -P 3307 -u _consulta wingraphex -e "<SQL>"
 ```
 > `--default-character-set=utf8` é obrigatório para acentuação legível (banco latin1).
@@ -94,7 +94,7 @@ mysql --default-character-set=utf8 -h 192.168.1.16 -P 3307 -u _consulta wingraph
 ## Exportação CSV (Classe A) — UTF-8 com BOM, separador `;`, decimal `,`
 ```bash
 { printf '\xef\xbb\xbfcliente;nome;titulos;saldo;pct_acum\n'; \
-MYSQL_PWD="$(awk -F'= ' '/senha/{print $2}' senha.txt)" \
+MYSQL_PWD="$(awk -F= '/^WINGRAPHEX_READ_PASSWORD=/{print $2}' docker/wingraphex/.env)" \
 mysql --default-character-set=utf8 --batch --raw -h 192.168.1.16 -P 3307 -u _consulta wingraphex -N \
 -e "SELECT CONCAT_WS(';', cliente, nome, titulos, REPLACE(CAST(saldo AS CHAR), '.', ','), REPLACE(CAST(ROUND(cum/11756279.32*100,2) AS CHAR), '.', ',')) FROM (
   SELECT a.*, @cum := @cum + a.saldo AS cum, @rn := @rn + 1 AS rn

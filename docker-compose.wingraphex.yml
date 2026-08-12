@@ -13,7 +13,7 @@ services:
     ports:
       - "3308:3306"
     volumes:
-      - ./initdb:/docker-entrypoint-initdb.d
+      - ./docker/wingraphex/initdb:/docker-entrypoint-initdb.d
       - wingraphex-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "--protocol=socket"]

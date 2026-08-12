@@ -29,7 +29,8 @@
     integrações (BOSCH, Salesforce), segurança (`_segusuario`, `_segpermissoes`).
   - Portas 22, 80, 443, 1433, 5432, 3306, 3310 fechadas.
   - **Credencial:** senha do usuário `_consulta` — **nunca salvar em texto puro**; ler de
-    `senha.txt` (fora do controle de versão) via `awk` no comando, nunca colar no chat/arquivo de conhecimento.
+    `WINGRAPHEX_READ_PASSWORD` em `docker/wingraphex/.env` (na raiz do monorepo, fora do controle de
+    versão) via `awk` no comando, nunca colar no chat/arquivo de conhecimento.
   - Cliente local: `mysql` 8.0.46 (Ubuntu 24.04).
 
 > Para testar SQL sem tocar a produção, existe uma réplica local em Docker (porta 3308, mesma

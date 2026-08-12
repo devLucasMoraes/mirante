@@ -2,27 +2,27 @@
 # Extrai amostra REAL (somente leitura) do banco de producao wingraphex
 # e gera initdb/02-dados.sql para o ambiente docker local.
 #
-# Uso:  MYSQL_PWD='...' ./scripts/extrai-dados.sh   (ou le a senha de ../../senha.txt)
+# Uso:  MYSQL_PWD='...' ./scripts/extrai-dados.sh   (ou le WINGRAPHEX_READ_PASSWORD de .env)
 #
 # Seguranca: apenas mysqldump com --single-transaction --skip-lock-tables
 # (somente leitura, sem LOCK TABLES). Nenhum INSERT/UPDATE/DELETE na origem.
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_FILE="${OUT_DIR}/initdb/02-dados.sql"
+ENV_FILE="${OUT_DIR}/.env"
 
 DBHOST=192.168.1.16
 DBPORT=3307
 DBUSER=_consulta
 DBNAME=wingraphex
 
-if [ -z "${MYSQL_PWD:-}" ] && [ -f "${ROOT_DIR}/senha.txt" ]; then
-	export MYSQL_PWD="$(awk -F'= ' '/^senha/{print $2}' "${ROOT_DIR}/senha.txt")"
+if [ -z "${MYSQL_PWD:-}" ] && [ -f "${ENV_FILE}" ]; then
+	export MYSQL_PWD="$(awk -F= '/^WINGRAPHEX_READ_PASSWORD=/{print $2}' "${ENV_FILE}")"
 fi
 if [ -z "${MYSQL_PWD:-}" ]; then
-	echo "ERRO: defina MYSQL_PWD ou senha.txt com a senha do _consulta" >&2
+	echo "ERRO: defina MYSQL_PWD ou WINGRAPHEX_READ_PASSWORD em docker/wingraphex/.env" >&2
 	exit 1
 fi
 
