@@ -16,8 +16,17 @@ import {
 
 import { config, mongoUri } from "./config.ts";
 import { setErrorHandler } from "./lib/errors.ts";
-import { authPlugin,mongoosePlugin } from "./plugins/index.ts";
-import { authRoutes, healthRoutes, userRoutes } from "./routes/index.ts";
+import {
+  authPlugin,
+  mongoosePlugin,
+  wingraphexPlugin,
+} from "./plugins/index.ts";
+import {
+  authRoutes,
+  healthRoutes,
+  userRoutes,
+  wingraphexRoutes,
+} from "./routes/index.ts";
 
 export async function createApp(): Promise<FastifyInstance> {
   const fastify = Fastify({
@@ -63,6 +72,7 @@ export async function createApp(): Promise<FastifyInstance> {
   await fastify.register(cookie, { secret: config.COOKIE_SECRET });
 
   await fastify.register(mongoosePlugin, { uri: mongoUri });
+  await fastify.register(wingraphexPlugin);
   await fastify.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await fastify.register(authPlugin, {
     refreshSecret: config.JWT_REFRESH_SECRET,
@@ -96,6 +106,7 @@ export async function createApp(): Promise<FastifyInstance> {
   await fastify.register(healthRoutes);
   await fastify.register(authRoutes, { prefix: "/api/auth" });
   await fastify.register(userRoutes, { prefix: "/api" });
+  await fastify.register(wingraphexRoutes, { prefix: "/api/wingraphex" });
 
   setErrorHandler(fastify);
 

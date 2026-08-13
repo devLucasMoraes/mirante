@@ -37,6 +37,14 @@
 - Conhecimento de schema/relatórios/fluxos: skill `wingraphex-erp` (`.opencode/skills/wingraphex-erp/`, references + `schema-wingraphex.sql`). Sem FKs declaradas; `EMP_ID` sempre no WHERE; usar `--default-character-set=utf8`.
 - `docker/wingraphex/.env` guarda também a senha de produção (`WINGRAPHEX_READ_PASSWORD`) — nunca commitar (`docker/wingraphex/.env` é ignorado pelo `.gitignore`).
 
+### Conexão da API ao Wingraphex (dev vs prod)
+
+- `apps/api` consome o Wingraphex como **somente leitura** através do plugin `wingraphexPlugin` (`plugins/wingraphex.plugin.ts`, `@fastify/mysql` com `promise: true`), que decora `fastify.wingraphex` (pool `MySQLPromisePool`).
+- **A escolha dev/prod é automática pelo `NODE_ENV`** em `config.ts`: `development`/`test` → `WINGRAPHEX_DB_HOST=127.0.0.1`, `WINGRAPHEX_DB_PORT=3308` (réplica Docker; subir com `pnpm db:wingraphex:up`); `production` → `192.168.1.16:3307` (banco real da rede da empresa). Qualquer valor pode ser sobrescrito via variáveis `WINGRAPHEX_DB_*` no `.env.<NODE_ENV>`.
+- Senha `WINGRAPHEX_DB_PASSWORD`: em dev é o `MYSQL_PASSWORD` (usuário `_consulta` da réplica); em prod é o `WINGRAPHEX_READ_PASSWORD`. Ambas vivem em `docker/wingraphex/.env` — copiar para `.env.<NODE_ENV>` (gitignorado), nunca commitar.
+- **Pool é lazy** (a API sobe mesmo com o banco fora do alcance — ex.: prod `192.168.1.16` inacessível da rede doméstica); o `onReady` loga o status com `SELECT 1` e `GET /health` reporta `wingraphex: boolean` em 1,5s.
+- **Segurança:** `GET /api/wingraphex/*` exige `authenticate` + `requireAbility("read", "WingraphexOp")` (regra em `@repo/authorization`, válida para **todas** as roles). Só existem as consultas **programadas** em `services/wingraphex.service.ts` (ex.: `queryOpsByDescription` = relatório `consulta-ops-por-descricao`). **Nunca** criar endpoint de query genérica/raw SQL ou deixar o pool acessível a rotas arbitrárias — qualquer outra forma de consulta é bloqueada.
+
 ## Gotchas
 - TS presets enable `verbatimModuleSyntax`, `strict`, and `noUncheckedIndexedAccess` — use `import type` for type-only imports and narrow nullable array/object access. This applies to `packages/ui` too (typechecked from the app's project references).
 - `turbo.json` marks `dev` tasks as persistent and uncached; `build` outputs `dist/**` and consumes `.env*` inputs.

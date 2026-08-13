@@ -9,6 +9,8 @@ import type { User, UserRole } from "./schemas.ts";
 export function defineRulesFor(role: UserRole): RawRuleOf<AppAbility>[] {
   const builder = new AbilityBuilder(createAppAbility);
 
+  builder.can("read", "WingraphexOp");
+
   if (role === "admin") {
     builder.can("manage", "all");
   } else {
@@ -20,6 +22,8 @@ export function defineRulesFor(role: UserRole): RawRuleOf<AppAbility>[] {
 
 export function defineAbilityFor(user: User): AppAbility {
   const builder = new AbilityBuilder(createAppAbility);
+
+  builder.can("read", "WingraphexOp");
 
   if (user.role === "admin") {
     builder.can("manage", "all");

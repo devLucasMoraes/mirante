@@ -10,6 +10,7 @@ import { userSubject } from "./subjects/user.ts";
 export const appAbilities = z.union([
   userSubject,
   z.tuple([z.literal("manage"), z.literal("all")]),
+  z.tuple([z.literal("read"), z.literal("WingraphexOp")]),
 ]);
 
 export type AppAbilities = z.infer<typeof appAbilities>;

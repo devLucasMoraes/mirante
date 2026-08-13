@@ -9,3 +9,7 @@ export {
 } from "./cookie.service.ts";
 export { hashPassword, verifyPassword } from "./password.service.ts";
 export { hashToken } from "./token.service.ts";
+export {
+  queryOpsByDescription,
+  type QueryOpsByDescriptionInput,
+} from "./wingraphex.service.ts";

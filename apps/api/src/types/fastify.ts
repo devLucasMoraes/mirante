@@ -1,3 +1,4 @@
+import type { MySQLPromisePool } from "@fastify/mysql";
 import type { Types } from "mongoose";
 
 import type { UserRole } from "../models/user.model.ts";
@@ -32,5 +33,7 @@ declare module "@fastify/jwt" {
 declare module "fastify" {
   interface FastifyInstance {
     authService: AuthService;
+    mysql: MySQLPromisePool;
+    wingraphex: MySQLPromisePool;
   }
 }

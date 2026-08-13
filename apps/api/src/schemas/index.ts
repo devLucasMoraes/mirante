@@ -7,3 +7,9 @@ export {
   type UserResponse,
   userResponseSchema,
 } from "./user.schema.ts";
+export {
+  type QueryOpsQuery,
+  queryOpsQuerySchema,
+  type WingraphexOp,
+  wingraphexOpSchema,
+} from "./wingraphex.schema.ts";
