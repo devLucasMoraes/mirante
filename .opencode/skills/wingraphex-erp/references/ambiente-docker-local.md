@@ -13,10 +13,39 @@ docker/wingraphex/
 ├── .env.example                 → modelo de variáveis (copiar para .env, nunca commitar .env)
 ├── initdb/
 │   ├── 01-schema.sql            → schema completo (557 tabelas), sem dados
-│   └── 02-dados.sql             → amostra REAL de dados (42 tabelas), gerada por extrai-dados.sh
+│   └── 02-dados.sql             → amostra REAL de dados (42 tabelas), gerada por extrai-dados.sh e incrementada por incrementa-ops.sh
 └── scripts/
-    └── extrai-dados.sh          → gera 02-dados.sql a partir da produção (somente leitura)
+    ├── extrai-dados.sh          → gera 02-dados.sql a partir da produção (somente leitura)
+    └── incrementa-ops.sh        → ANEXA 30 OPs completas de 5 clientes a 02-dados.sql (somente leitura)
 ```
+
+## 2026-08-13 — Amostra incrementada: +30 OPs completas de 5 clientes
+- **O que foi testado:** anexar 30 OPs ponta-a-ponta novas (5 clientes x 6 OPs) ao `02-dados.sql`
+  existente via `scripts/incrementa-ops.sh`, preservando o conteúdo anterior e sem duplicar PKs.
+- **Resultado:** funciona (validação: réplica recriada com `down -v` + `up -d`, carga 100% sem
+  erro de PK; contagens conferem).
+- **Como reproduzir:**
+  ```bash
+  ./docker/wingraphex/scripts/incrementa-ops.sh   # le WINGRAPHEX_READ_PASSWORD de docker/wingraphex/.env
+  ```
+- **Observações:**
+  - **Clientes:** 28, 10816, 6030, 606, 7379 (os mesmos da amostra; sem re-dump de cadastros).
+  - **Critério de OP "completa":** faturada (`ORS_STATUSFATURAMENTO='TSF_FATURADA'`), não
+    cancelada, com `pcptrabalhos`+`pcpprocessos`, `documentoitem` ligado por `CODIGOORDEMPRODUCAO`
+    e `financeiro` ligado via `DOC_ID`, e com `DOC_ID` ainda fora do arquivo.
+  - **O que foi anexado:** +30 `ordemservico`/`op`/`pcptrabalhos`/`orcamento`/`qtorcamento`,
+    +22 `documentocabecalho`/`documentocalculo`/`documentorodape`/`receber`, +46 `financeiro`,
+    +142 `ordemservicostatus`, +132 `pcpprocessos`, +98 `pcpapontamento`, +34 `documentoitem`/
+    `documentoitemcalculo`/`estoque`, +33 `material`.
+  - **Dedup automático:** o script lê os IDs já presentes no `02-dados.sql` (`ORDEMSERVICO`,
+    `ORCAMENTO`, `DOCUMENTOCABECALHO`, `FINANCEIRO`, `MATERIAL`) e exclui-os da seleção; remove
+    também as 2 linhas finais (`SET FOREIGN_KEY_CHECKS=1;`/`SET UNIQUE_CHECKS=1;`) antes de anexar
+    e as reescreve no fim.
+  - **`pagar` permanece vazio** (0 linhas, como na amostra).
+  - **Como incrementar de novo:** subir o contador `OPS_PER_CLIENT` (ex.: 6→12) e/ou trocar
+    `CLIENTS` no topo do script; rodar de novo (o dedup impede repetição).
+  - **Nota:** se rodar o script **depois** de recriar a réplica, a amostra nova não carrega sozinha —
+    precisa recriar o volume (ver abaixo) ou reimportar.
 
 ## 2026-08-12 — Réplica MySQL 5.7.26 com schema completo + amostra real
 - **O que foi testado:** criação de ambiente local com Docker Compose idêntico ao banco de
@@ -51,6 +80,9 @@ docker/wingraphex/
     9709, 10970, 10816, 28, 9769, 267, 606; mais apoio (formapagto, meiospagamento, tipodocumento,
     naturezaoperacao, estado, cidade, cfopoficial, banco/contabancaria/carteira, serienf,
     parametros, `_dicionario` 7.321, `_seggrupousuario`).
+  - **Após incremento de 2026-08-13:** 35 `ordemservico`, 36 `orcamento`, 29 `documentocabecalho`,
+    62 `financeiro`, 143 `pcpprocessos`, 298 `pcpapontamento`, 163 `ordemservicostatus`, 47
+    `estoque`, 46 `material` (as OPs antigas 161816/162015/162056/162060/162061 continuam lá).
   - **Caveat cliente 8.0.46 ↔ servidor 5.7:** usar `--ssl-mode=DISABLED` na conexão local (senão
     erro SSL handshake `ERROR 2026`). No healthcheck do compose usa socket (`--protocol=socket`),
     sem problema.
@@ -72,7 +104,8 @@ docker/wingraphex/
 - **Relatório precisa da carteira completa/dados atuais** → produção (3307) — a amostra local só
   tem as ~11 pessoas e documentos listados acima, não serve para ABC de carteira inteira.
 - **Ampliar a amostra local** (mais clientes/tabelas) → editar as variáveis `DOCS`/`OPS`/`ORCS`/`PESSOAS`
-  no topo de `docker/wingraphex/scripts/extrai-dados.sh` e rodar de novo.
+  no topo de `docker/wingraphex/scripts/extrai-dados.sh` e rodar de novo, **ou** anexar mais OPs
+  com `docker/wingraphex/scripts/incrementa-ops.sh` (ver seção 2026-08-13).
 
 ## Script `extrai-dados.sh` — o que ele faz
 Gera `initdb/02-dados.sql` via `mysqldump --no-create-info --single-transaction --skip-lock-tables`

@@ -10,7 +10,8 @@
     "db:wingraphex:up": "docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env up -d",
     "db:wingraphex:down": "docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env down",
     "db:wingraphex:reset": "docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env down -v && docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env up -d",
-    "db:wingraphex:logs": "docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env logs -f wingraphex-db"
+    "db:wingraphex:logs": "docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env logs -f wingraphex-db",
+    "db:mongo:up": "docker compose --env-file .env.development up -d"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
