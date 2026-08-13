@@ -1,4 +1,6 @@
-# my-monorepo
+# Mirante
+
+Consultas rápidas e inteligentes sobre o ERP legado (Wingraphex) da gráfica, com uma UI/UX moderna e sem mexer no banco de origem — acesso estritamente somente leitura.
 
 A [Turborepo](https://turborepo.dev) monorepo powered by [pnpm](https://pnpm.io).
 

@@ -1,4 +1,4 @@
-# API
+# Mirante · API
 
 Fastify + Mongoose API with cookie-only authentication (httpOnly signed cookies, refresh-token rotation).
 

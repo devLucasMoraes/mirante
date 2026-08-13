@@ -29,7 +29,7 @@ export function BrandLogo({ className, size = "md" }: BrandLogoProps) {
           size === "sm" ? "text-sm" : "text-lg",
         )}
       >
-        acme
+        Mirante
       </span>
     </div>
   );

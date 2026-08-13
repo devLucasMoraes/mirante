@@ -10,7 +10,7 @@
 - No test framework or CI is configured in this repo.
 
 ## Commands (run from repo root)
-- `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm check-types` — Turbo-routed across all packages; filter with `--filter=web`.
+- `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm check-types` — Turbo-routed across all packages; filter with `--filter=mirante-web`.
 - App `lint` runs `eslint . --max-warnings 0` — **warnings fail the lint task**.
 - App `check-types` and `build` use `tsc -b` (project references to `tsconfig.app.json` / `tsconfig.node.json`) — don't run bare `tsc` in `apps/*`.
 

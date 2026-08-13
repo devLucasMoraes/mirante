@@ -1,4 +1,4 @@
-# web
+# Mirante · Web
 
 Vite + React 19 + TypeScript (strict) + Tailwind CSS v4 + shadcn/ui. Parte do monorepo Turborepo — rode os comandos pela raiz:
 

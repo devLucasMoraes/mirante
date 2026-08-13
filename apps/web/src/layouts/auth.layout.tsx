@@ -23,8 +23,8 @@ export function AuthLayout() {
           <Quote className="mb-6 size-8 text-primary-foreground/60" aria-hidden="true" />
           <blockquote className="max-w-xl">
             <p className="text-2xl font-semibold leading-snug tracking-tight">
-              &ldquo;A acme reduziu nosso tempo de gestão pela metade. Hoje a
-              equipe trabalha no que importa de verdade.&rdquo;
+              &ldquo;O Mirante reduziu pela metade o tempo das nossas consultas.
+              Hoje a equipe trabalha no que importa de verdade.&rdquo;
             </p>
             <footer className="mt-6 flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-full bg-primary-foreground/20 text-sm font-semibold">
@@ -33,7 +33,7 @@ export function AuthLayout() {
               <div>
                 <p className="text-sm font-medium">Marina Souza</p>
                 <p className="text-sm text-primary-foreground/70">
-                  COO na Nimbus
+                  COO na Gráfica Horizonte
                 </p>
               </div>
             </footer>
@@ -45,10 +45,10 @@ export function AuthLayout() {
             variant="secondary"
             className="bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/20"
           >
-            +10.000 equipes
+            +100 consultas por dia
           </Badge>
           <p className="text-sm text-primary-foreground/80">
-            Confiado por times em todo o mundo
+            Confiado por gráficas em todo o Brasil
           </p>
         </div>
       </aside>

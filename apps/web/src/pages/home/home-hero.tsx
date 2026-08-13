@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BarChart3,
   Check,
+  FileSearch,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -22,7 +23,7 @@ function PreviewCard() {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
-            <span className="text-sm font-semibold">acme</span>
+            <span className="text-sm font-semibold">Mirante</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
@@ -33,21 +34,24 @@ function PreviewCard() {
         <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-[220px_1fr]">
           <div className="hidden flex-col gap-2 md:flex">
             <div className="flex h-12 items-center rounded-lg border border-border bg-muted/50 px-3 text-xs font-medium text-muted-foreground">
-              Visão geral
+              Consultas
             </div>
             <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground">
-              <BarChart3 className="size-4" /> Relatórios
+              <BarChart3 className="size-4" /> Faturamento
             </div>
             <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground">
-              <Users className="size-4" /> Membro do time
+              <FileSearch className="size-4" /> Orçamentos
+            </div>
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground">
+              <Users className="size-4" /> Clientes
             </div>
           </div>
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
               {[
-                ["Receita", "R$ 128k"],
-                ["Novos usuários", "2.4k"],
-                ["Conversão", "12,8%"],
+                ["OPs em aberto", "128"],
+                ["Faturado no mês", "R$ 512k"],
+                ["Contas a receber", "R$ 84k"],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -70,11 +74,12 @@ function PreviewCard() {
               </div>
               <div className="flex flex-col justify-center gap-3 rounded-lg border border-border bg-muted/40 p-4">
                 <div className="flex items-center gap-2 text-sm">
-                  <Check className="size-4 text-emerald-500" /> Tarefas em dia
+                  <Check className="size-4 text-emerald-500" /> OP #4521
+                  pronta
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Check className="size-4 text-emerald-500" /> Sprint
-                  atualizada
+                  <Check className="size-4 text-emerald-500" /> Orçamento
+                  aprovado
                 </div>
               </div>
             </div>
@@ -98,14 +103,15 @@ export function HomeHero() {
           className="mx-auto mb-6 gap-1.5 rounded-full px-3 py-1"
         >
           <Sparkles className="size-3.5 text-primary" />
-          Novidade: automações com IA
+          Consultas rápidas e inteligentes sobre o ERP da gráfica
         </Badge>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          Produtividade em escala para a sua equipe
+          Enxergue seu negócio com uma nova visão
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-          A plataforma tudo-em-um que ajuda times a planejar, executar e medir
-          o trabalho em um só lugar — sem migrar a forma de trabalhar.
+          O Mirante traz as consultas do banco legado para uma interface
+          moderna: OPs, orçamentos, faturamento e financeiro em segundos —
+          sem depender de relatórios manuais.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" asChild>
@@ -115,7 +121,7 @@ export function HomeHero() {
             </Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <a href="#recursos">Ver recurso</a>
+            <a href="#recursos">Ver recursos</a>
           </Button>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">

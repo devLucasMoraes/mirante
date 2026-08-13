@@ -16,7 +16,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const envSchema = z.object({
   MONGODB_PORT: z.coerce.number().default(27017),
-  MONGO_INITDB_DATABASE: z.string().min(1).default("my_monorepo"),
+  MONGO_INITDB_DATABASE: z.string().min(1).default("mirante"),
   MONGO_INITDB_USERNAME: z.string().min(1).default("app"),
   MONGO_INITDB_PASSWORD: z.string().min(1),
   PORT: z.coerce.number().default(3000),

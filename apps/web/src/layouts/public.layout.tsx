@@ -48,7 +48,7 @@ export function PublicLayout() {
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
           <BrandLogo size="sm" />
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} acme. Todos os direitos reservados.
+            © {new Date().getFullYear()} Mirante. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link to="/login" className="hover:text-foreground">

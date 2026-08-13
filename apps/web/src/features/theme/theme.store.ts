@@ -8,7 +8,7 @@ type ThemeState = {
   setTheme: (theme: Theme) => void;
 };
 
-export const THEME_STORAGE_KEY = "acme-theme";
+export const THEME_STORAGE_KEY = "mirante-theme";
 
 export const useThemeStore = create<ThemeState>()(
   persist(
