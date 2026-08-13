@@ -10,6 +10,8 @@ export {
 export { hashPassword, verifyPassword } from "./password.service.ts";
 export { hashToken } from "./token.service.ts";
 export {
+  queryClientes,
+  type QueryClientesInput,
   queryOpsByDescription,
   type QueryOpsByDescriptionInput,
 } from "./wingraphex.service.ts";

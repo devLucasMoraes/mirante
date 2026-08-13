@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useAbility } from "@casl/react";
 import {
-  LayoutDashboard,
+  ClipboardList,
   LogOut,
   Menu,
   UserRound,
@@ -92,7 +92,11 @@ function UserMenu() {
 
 function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const items = [
-    { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
+    {
+      label: "Ordens de produção",
+      href: "/dashboard",
+      icon: ClipboardList,
+    },
     { label: "Perfil", href: "/dashboard/perfil", icon: UserRound },
     ...(isAdmin
       ? [{ label: "Usuários", href: "/dashboard/usuarios", icon: Users }]

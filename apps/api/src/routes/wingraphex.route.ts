@@ -4,8 +4,16 @@ import { z } from "zod";
 
 import { authenticate } from "../hooks/authenticate.hook.ts";
 import { requireAbility } from "../lib/authorization.ts";
-import { queryOpsQuerySchema, wingraphexOpSchema } from "../schemas/index.ts";
-import { queryOpsByDescription } from "../services/index.ts";
+import {
+  queryClientesQuerySchema,
+  queryOpsQuerySchema,
+  wingraphexClienteSchema,
+  wingraphexOpsResponseSchema,
+} from "../schemas/index.ts";
+import {
+  queryClientes,
+  queryOpsByDescription,
+} from "../services/index.ts";
 
 export async function wingraphexRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", authenticate);
@@ -16,9 +24,21 @@ export async function wingraphexRoutes(fastify: FastifyInstance) {
       preHandler: requireAbility("read", "WingraphexOp"),
       schema: {
         querystring: queryOpsQuerySchema,
-        response: { 200: z.array(wingraphexOpSchema) },
+        response: { 200: wingraphexOpsResponseSchema },
       },
     },
     async (request) => queryOpsByDescription(fastify, request.query),
+  );
+
+  fastify.withTypeProvider<ZodTypeProvider>().get(
+    "/clientes",
+    {
+      preHandler: requireAbility("read", "WingraphexOp"),
+      schema: {
+        querystring: queryClientesQuerySchema,
+        response: { 200: z.array(wingraphexClienteSchema) },
+      },
+    },
+    async (request) => queryClientes(fastify, request.query),
   );
 }

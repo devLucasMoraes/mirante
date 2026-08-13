@@ -8,8 +8,14 @@ export {
   userResponseSchema,
 } from "./user.schema.ts";
 export {
+  type QueryClientesQuery,
+  queryClientesQuerySchema,
   type QueryOpsQuery,
   queryOpsQuerySchema,
+  type WingraphexCliente,
+  wingraphexClienteSchema,
   type WingraphexOp,
   wingraphexOpSchema,
+  type WingraphexOpsResponse,
+  wingraphexOpsResponseSchema,
 } from "./wingraphex.schema.ts";

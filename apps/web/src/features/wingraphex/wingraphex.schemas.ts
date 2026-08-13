@@ -4,14 +4,14 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD");
 
-export const queryOpsQuerySchema = z
+export const queryOpsParamsSchema = z
   .object({
     descricao: z.string().trim().optional(),
-    clienteId: z.coerce.number().int().positive().optional(),
+    clienteId: z.number().int().positive().optional(),
     dataInicio: dateStringSchema.optional(),
     dataFim: dateStringSchema.optional(),
-    pagina: z.coerce.number().int().min(1).default(1),
-    limite: z.coerce.number().int().min(1).max(1000).default(100),
+    pagina: z.number().int().min(1).optional(),
+    limite: z.number().int().min(1).max(100).optional(),
   })
   .superRefine((query, ctx) => {
     const hasDescricao = (query.descricao?.trim().length ?? 0) > 0;
@@ -41,21 +41,20 @@ export const queryOpsQuerySchema = z
     }
   });
 
-export type QueryOpsQuery = z.infer<typeof queryOpsQuerySchema>;
+export type QueryOpsParams = z.infer<typeof queryOpsParamsSchema>;
 
-export const queryClientesQuerySchema = z.object({
+export const queryClientesParamsSchema = z.object({
   term: z.string().trim().optional(),
-  limite: z.coerce.number().int().min(1).max(200).default(50),
 });
 
-export type QueryClientesQuery = z.infer<typeof queryClientesQuerySchema>;
+export type QueryClientesParams = z.infer<typeof queryClientesParamsSchema>;
 
-export const wingraphexClienteSchema = z.object({
+export const clienteSchema = z.object({
   id: z.coerce.number().int().positive(),
   nome: z.string(),
 });
 
-export type WingraphexCliente = z.infer<typeof wingraphexClienteSchema>;
+export type WingraphexCliente = z.infer<typeof clienteSchema>;
 
 export const wingraphexOpSchema = z.object({
   op: z.number(),
@@ -75,11 +74,11 @@ export const wingraphexOpSchema = z.object({
 
 export type WingraphexOp = z.infer<typeof wingraphexOpSchema>;
 
-export const wingraphexOpsResponseSchema = z.object({
+export const opsResponseSchema = z.object({
   itens: z.array(wingraphexOpSchema),
   total: z.number().int().nonnegative(),
   pagina: z.number().int().positive(),
   totalPaginas: z.number().int().nonnegative(),
 });
 
-export type WingraphexOpsResponse = z.infer<typeof wingraphexOpsResponseSchema>;
+export type OpsResponse = z.infer<typeof opsResponseSchema>;

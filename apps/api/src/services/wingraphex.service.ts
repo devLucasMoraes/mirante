@@ -2,11 +2,16 @@ import type { MySQLRowDataPacket } from "@fastify/mysql";
 import type { FastifyInstance } from "fastify";
 
 import { AppError } from "../lib/errors.ts";
-import type { WingraphexOp } from "../schemas/wingraphex.schema.ts";
+import type {
+  WingraphexCliente,
+  WingraphexOp,
+  WingraphexOpsResponse,
+} from "../schemas/wingraphex.schema.ts";
 
 interface WingraphexOpDbRow extends MySQLRowDataPacket {
   op: string | number;
   cliente: string | null;
+  descricao: string | null;
   qtd_total: string | number | null;
   saldo_qtd: string | number | null;
   valor_total: string | number | null;
@@ -20,11 +25,26 @@ interface WingraphexOpDbRow extends MySQLRowDataPacket {
 }
 
 export interface QueryOpsByDescriptionInput {
-  descricao: string;
+  descricao?: string;
   clienteId?: number;
   dataInicio?: string;
   dataFim?: string;
+  pagina: number;
   limite: number;
+}
+
+interface WingraphexCountDbRow extends MySQLRowDataPacket {
+  total: string | number;
+}
+
+export interface QueryClientesInput {
+  term?: string;
+  limite: number;
+}
+
+interface WingraphexClienteDbRow extends MySQLRowDataPacket {
+  id: number;
+  nome: string;
 }
 
 function escapeLike(value: string): string {
@@ -39,8 +59,10 @@ function buildOpsWhere(
   const clauses = [`${col("EMP_ID")}=1`, `${col("ORS_CANCELADA")}<>'S'`];
   const params: (string | number)[] = [];
 
-  clauses.push(`${col("ORS_DESCRICAO")} LIKE ?`);
-  params.push(`%${escapeLike(opts.descricao)}%`);
+  if (opts.descricao !== undefined && opts.descricao.trim() !== "") {
+    clauses.push(`${col("ORS_DESCRICAO")} LIKE ?`);
+    params.push(`%${escapeLike(opts.descricao.trim())}%`);
+  }
 
   if (opts.clienteId !== undefined) {
     clauses.push(`${col("CLI_ID")} = ?`);
@@ -66,6 +88,7 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
   return {
     op: Number(row.op),
     cliente: row.cliente ?? null,
+    descricao: row.descricao ?? "",
     qtd_total: toNumber(row.qtd_total),
     saldo_qtd: toNumber(row.saldo_qtd),
     valor_total: toNumber(row.valor_total),
@@ -82,14 +105,23 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
 export async function queryOpsByDescription(
   fastify: FastifyInstance,
   input: QueryOpsByDescriptionInput,
-): Promise<WingraphexOp[]> {
+): Promise<WingraphexOpsResponse> {
   const finWhere = buildOpsWhere("os2", input);
   const pcpWhere = buildOpsWhere("os3", input);
   const mainWhere = buildOpsWhere("os", input);
 
+  const offset = (input.pagina - 1) * input.limite;
+
+  const countSql = `
+    SELECT COUNT(*) AS total
+    FROM ordemservico os
+    JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
+    ${mainWhere.sql}`;
+
   const sql = `
     SELECT os.ORS_ID AS op,
            (SELECT p.PES_NOME_RAZAO FROM pessoa p WHERE p.EMP_ID=os.EMP_ID AND p.PES_ID=os.CLI_ID LIMIT 1) AS cliente,
+           os.ORS_DESCRICAO AS descricao,
            os.ORS_QUANTIDADE AS qtd_total,
            o.ORS_SALDO AS saldo_qtd,
            ROUND(os.ORS_VLRFINALPRAZO,2) AS valor_total,
@@ -126,20 +158,71 @@ export async function queryOpsByDescription(
     ) pcp ON pcp.op=os.ORS_ID
     ${mainWhere.sql}
     ORDER BY os.ORS_DATA DESC
-    LIMIT ?`;
+    LIMIT ? OFFSET ?`;
 
   const params = [
     ...finWhere.params,
     ...pcpWhere.params,
     ...mainWhere.params,
     input.limite,
+    offset,
   ];
 
   try {
+    const [countRows] = await fastify.wingraphex.query<WingraphexCountDbRow[]>(
+      countSql,
+      mainWhere.params,
+    );
+    const total = Number(countRows[0]?.total ?? 0);
+
     const [rows] = await fastify.wingraphex.query<WingraphexOpDbRow[]>(sql, params);
-    return rows.map(toWingraphexOp);
+
+    return {
+      itens: rows.map(toWingraphexOp),
+      total,
+      pagina: input.pagina,
+      totalPaginas: total === 0 ? 0 : Math.ceil(total / input.limite),
+    };
   } catch (err) {
     fastify.log.error({ err }, "Wingraphex query failed");
+    throw new AppError(503, "Banco Wingraphex indisponível.");
+  }
+}
+
+export async function queryClientes(
+  fastify: FastifyInstance,
+  input: QueryClientesInput,
+): Promise<WingraphexCliente[]> {
+  const clauses = [
+    "p.EMP_ID=1",
+    "os.ORS_CANCELADA<>'S'",
+    "os.CLI_ID=p.PES_ID",
+  ];
+  const params: (string | number)[] = [];
+
+  if (input.term !== undefined && input.term !== "") {
+    clauses.push("p.PES_NOME_RAZAO LIKE ?");
+    params.push(`%${escapeLike(input.term)}%`);
+  }
+
+  const sql = `
+    SELECT DISTINCT p.PES_ID AS id, p.PES_NOME_RAZAO AS nome
+    FROM pessoa p
+    JOIN ordemservico os ON os.EMP_ID=p.EMP_ID AND os.CLI_ID=p.PES_ID
+    WHERE ${clauses.join(" AND ")}
+    ORDER BY p.PES_NOME_RAZAO
+    LIMIT ?`;
+
+  params.push(input.limite);
+
+  try {
+    const [rows] = await fastify.wingraphex.query<WingraphexClienteDbRow[]>(
+      sql,
+      params,
+    );
+    return rows.map((row) => ({ id: Number(row.id), nome: row.nome }));
+  } catch (err) {
+    fastify.log.error({ err }, "Wingraphex clientes query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");
   }
 }
