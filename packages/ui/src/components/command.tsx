@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
 
@@ -172,11 +173,11 @@ function CommandShortcut({
 export {
   Command,
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
-  CommandShortcut,
+  CommandList,
   CommandSeparator,
+  CommandShortcut,
 }
