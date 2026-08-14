@@ -26,37 +26,58 @@ import type { NotaFaturamento, WingraphexOp } from "./wingraphex.schemas";
 
 const SKELETON_CARDS = 6;
 
-const STATUS_LABELS: Record<string, string> = {
-  TSF_AFATURAR: "A faturar",
-  TSF_FATURADA: "Faturada",
+type FaturamentoStatus = "A FATURAR" | "FATURADO_PARCIALMENTE" | "FATURADA";
+
+const FATURAMENTO_STATUS_STYLES: Record<FaturamentoStatus, string> = {
+  "A FATURAR": "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground",
+  FATURADO_PARCIALMENTE:
+    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  FATURADA: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400",
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const label = STATUS_LABELS[status] ?? status;
+function getFaturamentoStatus(op: WingraphexOp): {
+  label: string;
+  status: FaturamentoStatus;
+} {
+  const valorFaturado = op.faturamento.valor_faturado;
 
-  if (status === "TSF_FATURADA") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-      >
-        {label}
-      </Badge>
-    );
+  if (valorFaturado >= op.valor_servico - 0.01) {
+    return { label: "Faturada", status: "FATURADA" };
   }
 
-  if (status === "TSF_AFATURAR") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-      >
-        {label}
-      </Badge>
-    );
+  if (valorFaturado > 0) {
+    return { label: "Faturado parcialmente", status: "FATURADO_PARCIALMENTE" };
   }
 
-  return <Badge variant="secondary">{label}</Badge>;
+  if (op.status === "TSF_FATURADA") {
+    return { label: "Faturada", status: "FATURADA" };
+  }
+
+  return { label: "A faturar", status: "A FATURAR" };
+}
+
+function StatusBadge({ op }: { op: WingraphexOp }) {
+  const { label, status } = getFaturamentoStatus(op);
+  const isPago = op.financeiro.pago >= op.valor_servico - 0.01;
+  const hideFaturamento = status === "FATURADA" && isPago;
+
+  return (
+    <>
+      {!hideFaturamento ? (
+        <Badge variant="outline" className={FATURAMENTO_STATUS_STYLES[status]}>
+          {label}
+        </Badge>
+      ) : null}
+      {isPago ? (
+        <Badge
+          variant="outline"
+          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+        >
+          Pago
+        </Badge>
+      ) : null}
+    </>
+  );
 }
 
 function Stat({
@@ -197,7 +218,7 @@ function OpCard({ op }: { op: WingraphexOp }) {
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-medium tabular-nums">OP {op.op}</span>
-            <StatusBadge status={op.status} />
+            <StatusBadge op={op} />
           </div>
           <p className="text-sm text-muted-foreground">
             Emissão:{" "}
