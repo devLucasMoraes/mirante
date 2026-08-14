@@ -57,20 +57,37 @@ export const wingraphexClienteSchema = z.object({
 
 export type WingraphexCliente = z.infer<typeof wingraphexClienteSchema>;
 
+export const notaFaturamentoSchema = z.object({
+  serie: z.string().nullable(),
+  numero: z.string(),
+  data: z.string().nullable(),
+  valor: z.coerce.number(),
+  quantidade: z.coerce.number(),
+});
+
+export type NotaFaturamento = z.infer<typeof notaFaturamentoSchema>;
+
 export const wingraphexOpSchema = z.object({
   op: z.number(),
   cliente: z.string().nullable(),
   descricao: z.string(),
   qtd_total: z.coerce.number(),
-  saldo_qtd: z.coerce.number(),
-  valor_total: z.coerce.number(),
-  saldo_producao: z.coerce.number(),
-  valor_pago: z.coerce.number(),
-  saldo_receber: z.coerce.number(),
+  valor_servico: z.coerce.number(),
   data_emissao: z.string(),
   status: z.string(),
-  pcp_processos: z.coerce.number(),
-  pcp_finalizados: z.coerce.number(),
+  faturamento: z.object({
+    valor_faturado: z.coerce.number(),
+    quantidade_faturada: z.coerce.number(),
+    notas: z.array(notaFaturamentoSchema),
+  }),
+  financeiro: z.object({
+    pago: z.coerce.number(),
+    saldo: z.coerce.number(),
+  }),
+  pcp: z.object({
+    processos: z.coerce.number(),
+    finalizados: z.coerce.number(),
+  }),
 });
 
 export type WingraphexOp = z.infer<typeof wingraphexOpSchema>;

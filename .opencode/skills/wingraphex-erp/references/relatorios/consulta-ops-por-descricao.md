@@ -117,3 +117,22 @@ mysql --default-character-set=utf8 -h 192.168.1.16 -P 3307 -u _consulta wingraph
 - **Índices usados:** `op.PRIMARY (EMP_ID, ORS_ID)`, `ordemservico.fkCliente (EMP_ID, CLI_ID)`,
   `documentoitem.fkOP (EMP_ID, CODIGOORDEMPRODUCAO)`, `financeiro.akFinanceiro1 (EMP_ID, DOC_ID, CLASSIFICACAO)`,
   `pcpprocessos.fkOrdemProducao (EMP_ID, CODIGOOP)`.
+
+## 2026-08-13 — Nota com itens de várias OPs: financeiro é da nota, ratear por pro-rata
+
+- **O que foi testado:** amostra da réplica (29 notas CI/NF com `CODIGOORDEMPRODUCAO`): **9 de 29
+  notas têm itens de mais de uma OP** (31%). Ex.: CI **207293** (DOC 92389) = OPs 160223 (118,00) +
+  160306 (59,00) + 160102 (59,00) = total **236,00**.
+- **Resultado:** a atribuição antiga (somar `financeiro` por `DOC_ID` e repetir o total para cada OP)
+  **superestima o financeiro por OP**. Ex.: OP 160306 (serviço 59,00) aparecia "pago 236,00" — era a
+  nota inteira. 
+- **Solução adotada no app (pro-rata por valor faturado):** o título `TOL_CONTASARECEBER`
+  (`pago = Σ(VALOR−SALDO)`, `saldo = Σ SALDO`) pertence à nota; a parcela da OP = `share × título`,
+  com `share = Σ(QUANTIDADE×VALORUNITARIO) da OP na nota ÷ Σ(QUANTIDADE×VALORUNITARIO) de TODOS os
+  itens da nota` (inclui OPs fora da página/consulta). OP 160306 → share 59/236 = 25% → pago **59,00**,
+  saldo 0. Faturamento é item a item: valor 59,00 · qtd 1.000 · nota "CI 207293".
+- **Como reproduzir:** `SELECT ... FROM documentoitem di JOIN documentocabecalho dc ... WHERE
+  di.CODIGOORDEMPRODUCAO='160306'` (não cancelada, CLASSIFICACAO=0) → itens + `financeiro` por DOC_ID.
+- **Observações:** `documentoitem.CODIGOORDEMPRODUCAO` é varchar(20) — comparar como string (usa índice
+  `fkOP`). Nº da nota para exibição = `SERIENF + NUMERONF` (fallback `NUMERODOCUMENTO`/`DOC_ID`). Item
+  sem OP entra no denominador (share ligeiramente subatribuído — aceito).

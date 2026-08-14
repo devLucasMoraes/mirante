@@ -22,7 +22,7 @@ import { getErrorMessage } from "@/lib/error-message";
 
 import { OpsPagination } from "./ops-pagination";
 import { formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
-import type { WingraphexOp } from "./wingraphex.schemas";
+import type { NotaFaturamento, WingraphexOp } from "./wingraphex.schemas";
 
 const SKELETON_CARDS = 6;
 
@@ -92,6 +92,77 @@ function Stat({
   );
 }
 
+function FooterGroupLabel({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={cn(
+        "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+function formatNotaNumero(nota: NotaFaturamento): string {
+  return nota.serie ? `${nota.serie} ${nota.numero}` : nota.numero;
+}
+
+function NotasList({ notas }: { notas: NotaFaturamento[] }) {
+  if (notas.length === 0) {
+    return <p className="text-sm text-muted-foreground">—</p>;
+  }
+
+  const visible = notas.slice(0, 2);
+  const extraCount = notas.length - visible.length;
+
+  const chips = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {visible.map((nota) => (
+        <Badge key={formatNotaNumero(nota)} variant="outline" className="cursor-default">
+          {formatNotaNumero(nota)}
+        </Badge>
+      ))}
+      {extraCount > 0 ? (
+        <Badge variant="outline" className="cursor-default">
+          +{extraCount}
+        </Badge>
+      ) : null}
+    </div>
+  );
+
+  if (notas.length === 1) {
+    return chips;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{chips}</TooltipTrigger>
+      <TooltipContent side="bottom" align="start">
+        <ul className="flex flex-col gap-2">
+          {notas.map((nota) => (
+            <li key={formatNotaNumero(nota)} className="flex flex-col gap-0.5">
+              <span className="font-medium">{formatNotaNumero(nota)}</span>
+              <span className="text-muted-foreground">
+                {nota.data ? formatDate(nota.data) : "—"} ·{" "}
+                {formatQuantity(nota.quantidade)} un ·{" "}
+                {formatCurrency(nota.valor)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function SkeletonCard() {
   return (
     <Card className="gap-3 py-4">
@@ -142,11 +213,6 @@ function OpCard({ op }: { op: WingraphexOp }) {
           <Stat
             label="Quantidade"
             value={formatQuantity(op.qtd_total)}
-            hint={
-              op.saldo_qtd > 0
-                ? `saldo ${formatQuantity(op.saldo_qtd)}`
-                : undefined
-            }
             className="items-end"
           />
         </dl>
@@ -174,33 +240,62 @@ function OpCard({ op }: { op: WingraphexOp }) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex-col gap-3 border-t px-4 pt-3">
-        <dl className="flex w-full flex-wrap items-end gap-x-6 gap-y-3">
-          <Stat label="Valor total" value={formatCurrency(op.valor_total)} />
-          <Stat
-            label="Saldo de produção"
-            value={formatCurrency(op.saldo_producao)}
-          />
-          <Stat
-            label="PCP"
-            value={`${op.pcp_finalizados}/${op.pcp_processos}`}
-            hint="finalizados/total"
-          />
-        </dl>
-        <dl className="flex w-full flex-wrap items-baseline justify-end gap-x-4 gap-y-1 text-sm">
-          <div className="flex items-baseline gap-1.5">
-            <dt className="text-muted-foreground">Pago</dt>
-            <dd className="font-semibold tabular-nums">
-              {formatCurrency(op.valor_pago)}
-            </dd>
+      <CardFooter className="flex-col gap-4 border-t px-4 pt-3">
+        <div className="grid w-full gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
+          <div className="flex min-w-0 flex-col gap-2">
+            <FooterGroupLabel>Serviço</FooterGroupLabel>
+            <dl className="flex flex-wrap items-end gap-x-6 gap-y-2">
+              <Stat
+                label="Valor do serviço"
+                value={formatCurrency(op.valor_servico)}
+              />
+              <Stat label="Quantidade" value={formatQuantity(op.qtd_total)} />
+              <Stat
+                label="PCP"
+                value={`${op.pcp.finalizados}/${op.pcp.processos}`}
+                hint="finalizados/total"
+              />
+            </dl>
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <dt className="text-muted-foreground">A receber</dt>
-            <dd className="font-semibold tabular-nums">
-              {formatCurrency(op.saldo_receber)}
-            </dd>
+
+          <div className="flex min-w-0 flex-col gap-2">
+            <FooterGroupLabel>Faturamento</FooterGroupLabel>
+            <dl className="flex flex-wrap items-end gap-x-6 gap-y-2">
+              <Stat
+                label="Valor faturado"
+                value={formatCurrency(op.faturamento.valor_faturado)}
+              />
+              <Stat
+                label="Quantidade"
+                value={formatQuantity(op.faturamento.quantidade_faturada)}
+              />
+            </dl>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Nº da nota
+              </span>
+              <NotasList notas={op.faturamento.notas} />
+            </div>
           </div>
-        </dl>
+
+          <div className="flex shrink-0 flex-col gap-2 text-right">
+            <FooterGroupLabel className="text-right">Financeiro</FooterGroupLabel>
+            <dl className="flex flex-col items-end gap-1.5 text-sm">
+              <div className="flex items-baseline gap-1.5">
+                <dt className="text-muted-foreground">Pago (baixado)</dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatCurrency(op.financeiro.pago)}
+                </dd>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <dt className="text-muted-foreground">A pagar</dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatCurrency(op.financeiro.saldo)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
       </CardFooter>
     </Card>
   );

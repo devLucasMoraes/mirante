@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 
 import { AppError } from "../lib/errors.ts";
 import type {
+  NotaFaturamento,
   WingraphexCliente,
   WingraphexOp,
   WingraphexOpsResponse,
@@ -13,15 +14,32 @@ interface WingraphexOpDbRow extends MySQLRowDataPacket {
   cliente: string | null;
   descricao: string | null;
   qtd_total: string | number | null;
-  saldo_qtd: string | number | null;
-  valor_total: string | number | null;
-  saldo_producao: string | number | null;
-  valor_pago: string | number | null;
-  saldo_receber: string | number | null;
+  valor_servico: string | number | null;
   data_emissao: string | null;
   status: string | null;
   pcp_processos: string | number | null;
   pcp_finalizados: string | number | null;
+}
+
+interface DocIdDbRow extends MySQLRowDataPacket {
+  doc_id: string | number;
+}
+
+interface ItemNotaDbRow extends MySQLRowDataPacket {
+  DOC_ID: number;
+  op: string | null;
+  QUANTIDADE: string | number | null;
+  VALORUNITARIO: string | number | null;
+  SERIENF: string | null;
+  NUMERONF: number | null;
+  NUMERODOCUMENTO: string | null;
+  data_emissao: string | null;
+}
+
+interface FinanceiroNotaDbRow extends MySQLRowDataPacket {
+  DOC_ID: number;
+  VALOR: string | number | null;
+  SALDO: string | number | null;
 }
 
 export interface QueryOpsByDescriptionInput {
@@ -84,29 +102,120 @@ function toNumber(value: string | number | null): number {
   return value === null ? 0 : Number(value);
 }
 
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function placeholders(count: number): string {
+  return Array.from({ length: count }, () => "?").join(",");
+}
+
 function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
   return {
     op: Number(row.op),
     cliente: row.cliente ?? null,
     descricao: row.descricao ?? "",
     qtd_total: toNumber(row.qtd_total),
-    saldo_qtd: toNumber(row.saldo_qtd),
-    valor_total: toNumber(row.valor_total),
-    saldo_producao: toNumber(row.saldo_producao),
-    valor_pago: toNumber(row.valor_pago),
-    saldo_receber: toNumber(row.saldo_receber),
+    valor_servico: toNumber(row.valor_servico),
     data_emissao: row.data_emissao ?? "",
     status: row.status ?? "",
-    pcp_processos: toNumber(row.pcp_processos),
-    pcp_finalizados: toNumber(row.pcp_finalizados),
+    faturamento: { valor_faturado: 0, quantidade_faturada: 0, notas: [] },
+    financeiro: { pago: 0, saldo: 0 },
+    pcp: {
+      processos: toNumber(row.pcp_processos),
+      finalizados: toNumber(row.pcp_finalizados),
+    },
   };
+}
+
+async function fetchNotaDocIds(
+  fastify: FastifyInstance,
+  opIds: number[],
+): Promise<number[]> {
+  if (opIds.length === 0) return [];
+  const sql = `
+    SELECT DISTINCT di.DOC_ID AS doc_id
+    FROM documentoitem di
+    WHERE di.EMP_ID=1 AND di.CLASSIFICACAO=0
+      AND di.CODIGOORDEMPRODUCAO IN (${placeholders(opIds.length)})`;
+  const [rows] = await fastify.wingraphex.query<DocIdDbRow[]>(
+    sql,
+    opIds.map(String),
+  );
+  return rows.map((row) => Number(row.doc_id));
+}
+
+async function fetchItemsForDocs(
+  fastify: FastifyInstance,
+  docIds: number[],
+): Promise<ItemNotaDbRow[]> {
+  if (docIds.length === 0) return [];
+  const sql = `
+    SELECT di.DOC_ID, di.CODIGOORDEMPRODUCAO AS op,
+           di.QUANTIDADE, di.VALORUNITARIO,
+           dc.SERIENF, dc.NUMERONF, dc.NUMERODOCUMENTO,
+           DATE(dc.DATAEMISSAO) AS data_emissao
+    FROM documentoitem di
+    JOIN documentocabecalho dc
+      ON dc.EMP_ID=di.EMP_ID AND dc.CLASSIFICACAO=di.CLASSIFICACAO AND dc.DOC_ID=di.DOC_ID
+    WHERE di.EMP_ID=1 AND di.CLASSIFICACAO=0
+      AND di.DOC_ID IN (${placeholders(docIds.length)})
+      AND (dc.CANCELADA<>'S' OR dc.CANCELADA IS NULL)`;
+  const [rows] = await fastify.wingraphex.query<ItemNotaDbRow[]>(
+    sql,
+    docIds,
+  );
+  return rows;
+}
+
+async function fetchFinanceiroForDocs(
+  fastify: FastifyInstance,
+  docIds: number[],
+): Promise<FinanceiroNotaDbRow[]> {
+  if (docIds.length === 0) return [];
+  const sql = `
+    SELECT f.DOC_ID, f.VALOR, f.SALDO
+    FROM financeiro f
+    WHERE f.EMP_ID=1 AND f.CLASSIFICACAO=0
+      AND f.DOC_ID IN (${placeholders(docIds.length)})
+      AND f.ORIGEM='TOL_CONTASARECEBER'
+      AND (f.FLAGLANCCANCELADO<>'S' OR f.FLAGLANCCANCELADO IS NULL)
+      AND (f.ESTORNO<>'S' OR f.ESTORNO IS NULL)`;
+  const [rows] = await fastify.wingraphex.query<FinanceiroNotaDbRow[]>(
+    sql,
+    docIds,
+  );
+  return rows;
+}
+
+function buildDocValorTotal(items: ItemNotaDbRow[]): Map<number, number> {
+  const byDoc = new Map<number, number>();
+  for (const item of items) {
+    const valor = toNumber(item.QUANTIDADE) * toNumber(item.VALORUNITARIO);
+    const docId = Number(item.DOC_ID);
+    byDoc.set(docId, (byDoc.get(docId) ?? 0) + valor);
+  }
+  return byDoc;
+}
+
+function buildDocFinanceiro(
+  rows: FinanceiroNotaDbRow[],
+): Map<number, { pago: number; saldo: number }> {
+  const byDoc = new Map<number, { pago: number; saldo: number }>();
+  for (const row of rows) {
+    const docId = Number(row.DOC_ID);
+    const current = byDoc.get(docId) ?? { pago: 0, saldo: 0 };
+    current.pago += toNumber(row.VALOR) - toNumber(row.SALDO);
+    current.saldo += toNumber(row.SALDO);
+    byDoc.set(docId, current);
+  }
+  return byDoc;
 }
 
 export async function queryOpsByDescription(
   fastify: FastifyInstance,
   input: QueryOpsByDescriptionInput,
 ): Promise<WingraphexOpsResponse> {
-  const finWhere = buildOpsWhere("os2", input);
   const pcpWhere = buildOpsWhere("os3", input);
   const mainWhere = buildOpsWhere("os", input);
 
@@ -123,32 +232,13 @@ export async function queryOpsByDescription(
            (SELECT p.PES_NOME_RAZAO FROM pessoa p WHERE p.EMP_ID=os.EMP_ID AND p.PES_ID=os.CLI_ID LIMIT 1) AS cliente,
            os.ORS_DESCRICAO AS descricao,
            os.ORS_QUANTIDADE AS qtd_total,
-           o.ORS_SALDO AS saldo_qtd,
-           ROUND(os.ORS_VLRFINALPRAZO,2) AS valor_total,
-           ROUND(os.ORS_VLRFINALPRAZO*(o.ORS_SALDO/os.ORS_QUANTIDADE),2) AS saldo_producao,
-           COALESCE(fin.valor_pago,0) AS valor_pago,
-           COALESCE(fin.saldo_receber,0) AS saldo_receber,
+           ROUND(os.ORS_VLRFINALPRAZO,2) AS valor_servico,
            DATE(os.ORS_DATA) AS data_emissao,
            os.ORS_STATUSFATURAMENTO AS status,
            COALESCE(pcp.processos,0) AS pcp_processos,
            COALESCE(pcp.finalizados,0) AS pcp_finalizados
     FROM ordemservico os
     JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
-    LEFT JOIN (
-      SELECT di.CODIGOORDEMPRODUCAO AS op,
-             ROUND(SUM(f.VALOR-f.SALDO),2) AS valor_pago,
-             ROUND(SUM(f.SALDO),2) AS saldo_receber
-      FROM documentoitem di
-      JOIN documentocabecalho dc ON dc.EMP_ID=di.EMP_ID AND dc.CLASSIFICACAO=di.CLASSIFICACAO AND dc.DOC_ID=di.DOC_ID AND (dc.CANCELADA<>'S' OR dc.CANCELADA IS NULL)
-      JOIN financeiro f ON f.EMP_ID=dc.EMP_ID AND f.CLASSIFICACAO=dc.CLASSIFICACAO AND f.DOC_ID=dc.DOC_ID
-        AND f.ORIGEM='TOL_CONTASARECEBER'
-        AND (f.FLAGLANCCANCELADO<>'S' OR f.FLAGLANCCANCELADO IS NULL)
-        AND (f.ESTORNO<>'S' OR f.ESTORNO IS NULL)
-      WHERE di.EMP_ID=1 AND di.CODIGOORDEMPRODUCAO IN (
-        SELECT os2.ORS_ID FROM ordemservico os2 ${finWhere.sql}
-      )
-      GROUP BY di.CODIGOORDEMPRODUCAO
-    ) fin ON fin.op=os.ORS_ID
     LEFT JOIN (
       SELECT pc.CODIGOOP AS op, COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
       FROM pcpprocessos pc WHERE pc.EMP_ID=1 AND pc.CODIGOOP IN (
@@ -161,7 +251,6 @@ export async function queryOpsByDescription(
     LIMIT ? OFFSET ?`;
 
   const params = [
-    ...finWhere.params,
     ...pcpWhere.params,
     ...mainWhere.params,
     input.limite,
@@ -175,10 +264,93 @@ export async function queryOpsByDescription(
     );
     const total = Number(countRows[0]?.total ?? 0);
 
-    const [rows] = await fastify.wingraphex.query<WingraphexOpDbRow[]>(sql, params);
+    const [rows] = await fastify.wingraphex.query<WingraphexOpDbRow[]>(
+      sql,
+      params,
+    );
+    const itens = rows.map(toWingraphexOp);
+
+    if (itens.length > 0) {
+      const opIds = itens.map((item) => item.op);
+      const byOp = new Map<number, WingraphexOp>(
+        itens.map((item) => [item.op, item]),
+      );
+      const docIds = await fetchNotaDocIds(fastify, opIds);
+      const [items, financeiroRows] = await Promise.all([
+        fetchItemsForDocs(fastify, docIds),
+        fetchFinanceiroForDocs(fastify, docIds),
+      ]);
+
+      const docValorTotal = buildDocValorTotal(items);
+      const docFinanceiro = buildDocFinanceiro(financeiroRows);
+      const pageOps = new Set(opIds);
+
+      const comItens = new Map<number, Map<number, NotaFaturamento>>();
+      for (const item of items) {
+        const opId = Number(item.op);
+        if (item.op === null || item.op === "" || !pageOps.has(opId)) {
+          continue;
+        }
+        const valor = toNumber(item.QUANTIDADE) * toNumber(item.VALORUNITARIO);
+        const quantidade = toNumber(item.QUANTIDADE);
+        const porDoc = comItens.get(opId) ?? new Map<number, NotaFaturamento>();
+        const nota = porDoc.get(item.DOC_ID) ?? {
+          serie: item.SERIENF ?? null,
+          numero: String(item.NUMERONF ?? item.NUMERODOCUMENTO ?? item.DOC_ID),
+          data: item.data_emissao ?? null,
+          valor: 0,
+          quantidade: 0,
+        };
+        nota.valor += valor;
+        nota.quantidade += quantidade;
+        porDoc.set(item.DOC_ID, nota);
+        comItens.set(opId, porDoc);
+      }
+
+      for (const opId of opIds) {
+        const porDoc = comItens.get(opId);
+        if (!porDoc) continue;
+
+        let valorFaturado = 0;
+        let quantidadeFaturada = 0;
+        let pago = 0;
+        let saldo = 0;
+        const notas: NotaFaturamento[] = [];
+
+        for (const [docId, nota] of porDoc) {
+          const totalDoc = docValorTotal.get(docId) ?? 0;
+          const share = totalDoc > 0 ? nota.valor / totalDoc : 0;
+          const financeiroDoc = docFinanceiro.get(docId);
+          if (financeiroDoc) {
+            pago += financeiroDoc.pago * share;
+            saldo += financeiroDoc.saldo * share;
+          }
+          valorFaturado += nota.valor;
+          quantidadeFaturada += nota.quantidade;
+          notas.push(nota);
+        }
+
+        notas.sort((a, b) =>
+          (a.data ?? "").localeCompare(b.data ?? ""),
+        );
+
+        const item = byOp.get(opId);
+        if (item) {
+          item.faturamento = {
+            valor_faturado: round2(valorFaturado),
+            quantidade_faturada: round2(quantidadeFaturada),
+            notas,
+          };
+          item.financeiro = {
+            pago: round2(pago),
+            saldo: round2(saldo),
+          };
+        }
+      }
+    }
 
     return {
-      itens: rows.map(toWingraphexOp),
+      itens,
       total,
       pagina: input.pagina,
       totalPaginas: total === 0 ? 0 : Math.ceil(total / input.limite),
