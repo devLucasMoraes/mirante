@@ -12,7 +12,7 @@ import type {
   QueryOpsParams,
 } from "./wingraphex.schemas";
 
-export const OPS_PER_PAGE = 20;
+export const OPS_PER_PAGE = 10;
 
 function hasOpsCriteria(params: QueryOpsParams): boolean {
   return (

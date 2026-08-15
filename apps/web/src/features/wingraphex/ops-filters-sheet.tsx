@@ -19,6 +19,7 @@ import { ClienteCombobox } from "./cliente-combobox";
 export type OpFilters = {
   clienteId?: number;
   clienteNome?: string;
+  clienteFantasia?: string;
   dataInicio: string;
   dataFim: string;
 };
@@ -102,7 +103,11 @@ export function OpsFiltersSheet({
               <ClienteCombobox
                 value={
                   draft.clienteId !== undefined
-                    ? { id: draft.clienteId, nome: draft.clienteNome ?? "" }
+                    ? {
+                        id: draft.clienteId,
+                        nome: draft.clienteNome ?? "",
+                        fantasia: draft.clienteFantasia ?? "",
+                      }
                     : null
                 }
                 onSelect={(cliente) =>
@@ -110,6 +115,7 @@ export function OpsFiltersSheet({
                     ...current,
                     clienteId: cliente?.id,
                     clienteNome: cliente?.nome,
+                    clienteFantasia: cliente?.fantasia,
                   }))
                 }
               />

@@ -63,6 +63,7 @@ export interface QueryClientesInput {
 interface WingraphexClienteDbRow extends MySQLRowDataPacket {
   id: number;
   nome: string;
+  fantasia: string;
 }
 
 function escapeLike(value: string): string {
@@ -229,7 +230,10 @@ export async function queryOpsByDescription(
 
   const sql = `
     SELECT os.ORS_ID AS op,
-           (SELECT p.PES_NOME_RAZAO FROM pessoa p WHERE p.EMP_ID=os.EMP_ID AND p.PES_ID=os.CLI_ID LIMIT 1) AS cliente,
+           (SELECT CONCAT_WS(' / ',
+                   NULLIF(TRIM(p.PES_NOME_RAZAO), ''),
+                   NULLIF(NULLIF(TRIM(p.PES_NOMEFANTASIA), ''), TRIM(p.PES_NOME_RAZAO)))
+            FROM pessoa p WHERE p.EMP_ID=os.EMP_ID AND p.PES_ID=os.CLI_ID LIMIT 1) AS cliente,
            os.ORS_DESCRICAO AS descricao,
            os.ORS_QUANTIDADE AS qtd_total,
            ROUND(os.ORS_VLRFINALPRAZO,2) AS valor_servico,
@@ -373,12 +377,15 @@ export async function queryClientes(
   const params: (string | number)[] = [];
 
   if (input.term !== undefined && input.term !== "") {
-    clauses.push("p.PES_NOME_RAZAO LIKE ?");
-    params.push(`%${escapeLike(input.term)}%`);
+    clauses.push("(p.PES_NOME_RAZAO LIKE ? OR p.PES_NOMEFANTASIA LIKE ?)");
+    params.push(`%${escapeLike(input.term)}%`, `%${escapeLike(input.term)}%`);
   }
 
   const sql = `
-    SELECT DISTINCT p.PES_ID AS id, p.PES_NOME_RAZAO AS nome
+    SELECT DISTINCT
+      p.PES_ID AS id,
+      p.PES_NOME_RAZAO AS nome,
+      p.PES_NOMEFANTASIA AS fantasia
     FROM pessoa p
     JOIN ordemservico os ON os.EMP_ID=p.EMP_ID AND os.CLI_ID=p.PES_ID
     WHERE ${clauses.join(" AND ")}
@@ -392,7 +399,11 @@ export async function queryClientes(
       sql,
       params,
     );
-    return rows.map((row) => ({ id: Number(row.id), nome: row.nome }));
+    return rows.map((row) => ({
+      id: Number(row.id),
+      nome: row.nome,
+      fantasia: row.fantasia,
+    }));
   } catch (err) {
     fastify.log.error({ err }, "Wingraphex clientes query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");

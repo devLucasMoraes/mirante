@@ -52,6 +52,7 @@ export type QueryClientesParams = z.infer<typeof queryClientesParamsSchema>;
 export const clienteSchema = z.object({
   id: z.coerce.number().int().positive(),
   nome: z.string(),
+  fantasia: z.string(),
 });
 
 export type WingraphexCliente = z.infer<typeof clienteSchema>;

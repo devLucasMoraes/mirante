@@ -133,7 +133,15 @@ export function ClienteCombobox({
                           : "opacity-0",
                       )}
                     />
-                    <span className="truncate">{cliente.nome}</span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate">{cliente.nome}</span>
+                      {cliente.fantasia !== "" &&
+                      cliente.fantasia !== cliente.nome ? (
+                        <span className="truncate text-xs text-muted-foreground">
+                          {cliente.fantasia}
+                        </span>
+                      ) : null}
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>
