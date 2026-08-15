@@ -1,4 +1,6 @@
-import { Loader2, PackageSearch, Search, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+
+import { ChevronDown, Loader2, PackageSearch, Search, TriangleAlert } from "lucide-react";
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
@@ -10,6 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@repo/ui/components/collapsible";
 import {
   Tooltip,
   TooltipContent,
@@ -196,22 +203,16 @@ function SkeletonCard() {
         <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
         <div className="mt-1 h-4 w-40 animate-pulse rounded bg-muted" />
       </CardContent>
-      <CardFooter className="flex-col gap-3 border-t px-4 pt-3">
-        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => (
-            <div
-              key={index}
-              className="h-9 animate-pulse rounded bg-muted"
-            />
-          ))}
-        </div>
-        <div className="ml-auto h-4 w-40 animate-pulse rounded bg-muted" />
-      </CardFooter>
+      <div className="border-t px-4 pt-3">
+        <div className="ml-auto h-4 w-48 animate-pulse rounded bg-muted" />
+      </div>
     </Card>
   );
 }
 
 function OpCard({ op }: { op: WingraphexOp }) {
+  const [detalhesOpen, setDetalhesOpen] = useState(false);
+
   return (
     <Card className="gap-3 py-4">
       <CardHeader className="flex items-start justify-between gap-4 px-4">
@@ -261,8 +262,24 @@ function OpCard({ op }: { op: WingraphexOp }) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex-col gap-4 border-t px-4 pt-3">
-        <div className="grid w-full gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
+      <Collapsible open={detalhesOpen} onOpenChange={setDetalhesOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="group flex w-full items-center justify-between gap-2 border-t px-4 pt-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span>
+              {detalhesOpen
+                ? "Ocultar detalhes de PCP, faturamento e financeiro"
+                : "Ver detalhes de PCP, faturamento e financeiro"}
+            </span>
+            <ChevronDown className="size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <CardFooter className="flex-col gap-4 px-4 pt-3">
+            <div className="grid w-full gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
           <div className="flex min-w-0 flex-col gap-2">
             <FooterGroupLabel>Serviço</FooterGroupLabel>
             <dl className="flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -316,8 +333,10 @@ function OpCard({ op }: { op: WingraphexOp }) {
               </div>
             </dl>
           </div>
-        </div>
-      </CardFooter>
+</div>
+          </CardFooter>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }
