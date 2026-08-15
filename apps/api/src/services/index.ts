@@ -7,6 +7,12 @@ export {
   setAuthCookies,
   ttlToMs,
 } from "./cookie.service.ts";
+export {
+  createRecibo,
+  deleteRecibo,
+  historicoPorOp,
+  sumQuantidadePorOps,
+} from "./entrega.service.ts";
 export { hashPassword, verifyPassword } from "./password.service.ts";
 export { hashToken } from "./token.service.ts";
 export {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { ChevronDown, Loader2, PackageSearch, Search, TriangleAlert } from "lucide-react";
+import { ChevronDown, History, Loader2, PackageSearch, Search, TriangleAlert } from "lucide-react";
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { Checkbox } from "@repo/ui/components/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
@@ -210,8 +211,19 @@ function SkeletonCard() {
   );
 }
 
-function OpCard({ op }: { op: WingraphexOp }) {
+function OpCard({
+  op,
+  isSelected,
+  onToggleSelect,
+  onHistorico,
+}: {
+  op: WingraphexOp;
+  isSelected: boolean;
+  onToggleSelect: (op: number) => void;
+  onHistorico: (op: number) => void;
+}) {
   const [detalhesOpen, setDetalhesOpen] = useState(false);
+  const entregueCompleto = op.entregue >= op.qtd_total && op.qtd_total > 0;
 
   return (
     <Card className="gap-3 py-4">
@@ -231,13 +243,25 @@ function OpCard({ op }: { op: WingraphexOp }) {
             </time>
           </p>
         </div>
-        <dl className="shrink-0 text-right">
-          <Stat
-            label="Quantidade"
-            value={formatQuantity(op.qtd_total)}
-            className="items-end"
+        <div className="flex shrink-0 items-start gap-3">
+          <dl className="text-right">
+            <Stat
+              label="Entregue"
+              value={formatQuantity(op.entregue)}
+              hint={`de ${formatQuantity(op.qtd_total)}`}
+              className={cn(
+                "items-end",
+                entregueCompleto ? "text-emerald-600 dark:text-emerald-400" : undefined,
+              )}
+            />
+          </dl>
+          <Checkbox
+            aria-label={`Selecionar OP ${op.op} para gerar recibo`}
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(op.op)}
+            className="mt-2"
           />
-        </dl>
+        </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-1.5 px-4">
@@ -260,6 +284,18 @@ function OpCard({ op }: { op: WingraphexOp }) {
         <p className="truncate text-sm text-muted-foreground">
           {op.cliente ?? "—"}
         </p>
+        <div className="mt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 px-2 text-muted-foreground"
+            onClick={() => onHistorico(op.op)}
+          >
+            <History className="size-4" />
+            Histórico de entregas
+          </Button>
+        </div>
       </CardContent>
 
       <Collapsible open={detalhesOpen} onOpenChange={setDetalhesOpen}>
@@ -351,6 +387,9 @@ export function OpsTable({
   isFetching,
   isError,
   error,
+  selectedOps,
+  onToggleSelect,
+  onHistorico,
   onRetry,
   onPageChange,
 }: {
@@ -363,6 +402,9 @@ export function OpsTable({
   isFetching: boolean;
   isError: boolean;
   error: Error | null;
+  selectedOps: ReadonlySet<number>;
+  onToggleSelect: (op: number) => void;
+  onHistorico: (op: number) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
 }) {
@@ -439,7 +481,15 @@ export function OpsTable({
           <>
             <TooltipProvider delayDuration={0}>
               <div className="grid grid-cols-1 gap-4">
-                {itens?.map((op) => <OpCard key={op.op} op={op} />)}
+                {itens?.map((op) => (
+                  <OpCard
+                    key={op.op}
+                    op={op}
+                    isSelected={selectedOps.has(op.op)}
+                    onToggleSelect={onToggleSelect}
+                    onHistorico={onHistorico}
+                  />
+                ))}
               </div>
             </TooltipProvider>
             {(totalPaginas ?? 0) > 1 ? (

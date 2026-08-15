@@ -5,10 +5,12 @@ import {
 } from "@casl/ability";
 import { z } from "zod";
 
+import { reciboEntregaSubject } from "./subjects/recibo-entrega.ts";
 import { userSubject } from "./subjects/user.ts";
 
 export const appAbilities = z.union([
   userSubject,
+  reciboEntregaSubject,
   z.tuple([z.literal("manage"), z.literal("all")]),
   z.tuple([z.literal("read"), z.literal("WingraphexOp")]),
 ]);

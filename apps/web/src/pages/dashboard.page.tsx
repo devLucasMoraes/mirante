@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { FilePlus2, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 
+import { useReciboPorOpQuery } from "@/features/entregas/entrega.queries";
+import type { ReciboEntrega } from "@/features/entregas/entrega.schemas";
+import { HistoricoDialog } from "@/features/entregas/historico-dialog";
+import { ReciboAcoesDialog } from "@/features/entregas/recibo-acoes-dialog";
+import { ReciboDialog } from "@/features/entregas/recibo-dialog";
 import type { OpFilters } from "@/features/wingraphex/ops-filters-sheet";
 import {
   EMPTY_FILTERS,
@@ -21,6 +26,10 @@ export function DashboardPage() {
   const [filters, setFilters] = useState<OpFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pagina, setPagina] = useState(1);
+  const [selectedOps, setSelectedOps] = useState<ReadonlySet<number>>(new Set());
+  const [reciboOpen, setReciboOpen] = useState(false);
+  const [reciboGerado, setReciboGerado] = useState<ReciboEntrega | null>(null);
+  const [historicoOp, setHistoricoOp] = useState<number | null>(null);
 
   const hasDateFilter = filters.dataInicio !== "" || filters.dataFim !== "";
   const hasCriteria =
@@ -38,17 +47,56 @@ export function DashboardPage() {
     pagina,
   };
   const opsQuery = useOpsQuery(params);
+  const opsItens = opsQuery.data?.itens;
+
+  const opsPorId = useMemo(() => {
+    const mapa = new Map<number, NonNullable<typeof opsItens>[number]>();
+    for (const item of opsItens ?? []) {
+      mapa.set(item.op, item);
+    }
+    return mapa;
+  }, [opsItens]);
+
+  const selecionadas = useMemo(
+    () =>
+      Array.from(selectedOps)
+        .map((op) => opsPorId.get(op))
+        .filter((item) => item !== undefined),
+    [selectedOps, opsPorId],
+  );
+
+  const opHistorico = historicoOp !== null ? opsPorId.get(historicoOp) : undefined;
+  const historicoQuery = useReciboPorOpQuery(historicoOp ?? 0);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const term = searchInput.trim();
     setDescricao(term);
     setPagina(1);
+    setSelectedOps(new Set());
   };
 
   const applyFilters = (next: OpFilters) => {
     setFilters(next);
     setPagina(1);
+    setSelectedOps(new Set());
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagina(page);
+    setSelectedOps(new Set());
+  };
+
+  const toggleSelect = (op: number) => {
+    setSelectedOps((current) => {
+      const next = new Set(current);
+      if (next.has(op)) {
+        next.delete(op);
+      } else {
+        next.add(op);
+      }
+      return next;
+    });
   };
 
   const removeCliente = () => {
@@ -172,8 +220,11 @@ export function DashboardPage() {
         isFetching={opsQuery.isFetching}
         isError={opsQuery.isError}
         error={opsQuery.error}
+        selectedOps={selectedOps}
+        onToggleSelect={toggleSelect}
+        onHistorico={setHistoricoOp}
         onRetry={() => void opsQuery.refetch()}
-        onPageChange={setPagina}
+        onPageChange={handlePageChange}
       />
 
       <OpsFiltersSheet
@@ -181,6 +232,82 @@ export function DashboardPage() {
         onOpenChange={setSheetOpen}
         filters={filters}
         onApply={applyFilters}
+      />
+
+      {selecionadas.length > 0 ? (
+        <div className="sticky bottom-4 z-20 flex items-center justify-between gap-3 rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">
+              {selecionadas.length}
+            </span>{" "}
+            OP{selecionadas.length === 1 ? "" : "s"} selecionada
+            {selecionadas.length === 1 ? "" : "s"}.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedOps(new Set())}
+            >
+              Limpar
+            </Button>
+            <Button type="button" onClick={() => setReciboOpen(true)}>
+              <FilePlus2 />
+              Gerar recibo
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <ReciboDialog
+        open={reciboOpen}
+        onOpenChange={(open) => {
+          setReciboOpen(open);
+          if (!open) {
+            setSelectedOps(new Set());
+          }
+        }}
+        onSalvo={setReciboGerado}
+        itens={selecionadas.map((item) => ({
+          op: item.op,
+          cliente: item.cliente,
+          descricao: item.descricao,
+          qtd_total: item.qtd_total,
+          entregue: item.entregue,
+        }))}
+      />
+
+      <ReciboAcoesDialog
+        recibo={reciboGerado}
+        open={reciboGerado !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReciboGerado(null);
+          }
+        }}
+      />
+
+      <HistoricoDialog
+        op={
+          opHistorico
+            ? {
+                op: opHistorico.op,
+                qtd_total: opHistorico.qtd_total,
+                entregue: opHistorico.entregue,
+              }
+            : { op: 0, qtd_total: 0, entregue: 0 }
+        }
+        open={historicoOp !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setHistoricoOp(null);
+          }
+        }}
+        recibos={historicoQuery.data}
+        isPending={historicoQuery.isPending}
+        isError={historicoQuery.isError}
+        error={historicoQuery.error}
+        onRetry={() => void historicoQuery.refetch()}
       />
     </div>
   );

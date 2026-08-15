@@ -117,6 +117,7 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
     cliente: row.cliente ?? null,
     descricao: row.descricao ?? "",
     qtd_total: toNumber(row.qtd_total),
+    entregue: 0,
     valor_servico: toNumber(row.valor_servico),
     data_emissao: row.data_emissao ?? "",
     status: row.status ?? "",

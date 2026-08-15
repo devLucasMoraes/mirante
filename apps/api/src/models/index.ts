@@ -1,4 +1,17 @@
 export {
+  type CounterDoc,
+  CounterModel,
+  nextSequenceValue,
+} from "./counter.model.ts";
+export {
+  type ReciboEntregaDoc,
+  type ReciboEntregaDTO,
+  type ReciboEntregaFields,
+  type ReciboEntregaItemFields,
+  ReciboEntregaModel,
+  toReciboEntregaDTO,
+} from "./recibo-entrega.model.ts";
+export {
   type RefreshTokenDoc,
   type RefreshTokenFields,
   RefreshTokenModel,

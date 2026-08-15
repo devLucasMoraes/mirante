@@ -14,4 +14,8 @@ export {
   userRoleSchema,
   userSchema,
 } from "./schemas.ts";
+export {
+  reciboEntregaSubject,
+  reciboEntregaSubjectSchema,
+} from "./subjects/recibo-entrega.ts";
 export { userSubject } from "./subjects/user.ts";

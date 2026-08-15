@@ -13,6 +13,7 @@ import {
 import {
   queryClientes,
   queryOpsByDescription,
+  sumQuantidadePorOps,
 } from "../services/index.ts";
 
 export async function wingraphexRoutes(fastify: FastifyInstance) {
@@ -27,7 +28,17 @@ export async function wingraphexRoutes(fastify: FastifyInstance) {
         response: { 200: wingraphexOpsResponseSchema },
       },
     },
-    async (request) => queryOpsByDescription(fastify, request.query),
+    async (request) => {
+      const response = await queryOpsByDescription(fastify, request.query);
+      if (response.itens.length > 0) {
+        const opIds = response.itens.map((item) => item.op);
+        const entreguePorOp = await sumQuantidadePorOps(opIds);
+        for (const item of response.itens) {
+          item.entregue = entreguePorOp.get(item.op) ?? 0;
+        }
+      }
+      return response;
+    },
   );
 
   fastify.withTypeProvider<ZodTypeProvider>().get(

@@ -72,6 +72,7 @@ export const wingraphexOpSchema = z.object({
   cliente: z.string().nullable(),
   descricao: z.string(),
   qtd_total: z.coerce.number(),
+  entregue: z.coerce.number().default(0),
   valor_servico: z.coerce.number(),
   data_emissao: z.string(),
   status: z.string(),

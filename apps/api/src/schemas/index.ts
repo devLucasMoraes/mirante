@@ -1,5 +1,17 @@
 export { type Credentials,credentialsSchema } from "./auth.schema.ts";
 export {
+  type CreateReciboPayload,
+  createReciboSchema,
+  type HistoricoEntrega,
+  historicoEntregaSchema,
+  opParamSchema,
+  type ReciboEntregaItem,
+  reciboEntregaItemSchema,
+  type ReciboEntregaResponse,
+  reciboEntregaResponseSchema,
+  reciboIdParamSchema,
+} from "./entrega.schema.ts";
+export {
   type CreateUserPayload,
   createUserSchema,
   type UpdateUserPayload,
