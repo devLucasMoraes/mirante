@@ -1,4 +1,5 @@
 export * from "./cliente-combobox";
+export * from "./ops-filters.store";
 export * from "./ops-filters-sheet";
 export * from "./ops-pagination";
 export * from "./ops-table";

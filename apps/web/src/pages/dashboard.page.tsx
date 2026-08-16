@@ -17,21 +17,26 @@ import type { ReciboEntrega } from "@/features/entregas/entrega.schemas";
 import { HistoricoDialog } from "@/features/entregas/historico-dialog";
 import { ReciboAcoesDialog } from "@/features/entregas/recibo-acoes-dialog";
 import { ReciboDialog } from "@/features/entregas/recibo-dialog";
+import { useOpsFiltersStore } from "@/features/wingraphex/ops-filters.store";
 import type { OpFilters } from "@/features/wingraphex/ops-filters-sheet";
-import {
-  EMPTY_FILTERS,
-  OpsFiltersSheet,
-} from "@/features/wingraphex/ops-filters-sheet";
+import { OpsFiltersSheet } from "@/features/wingraphex/ops-filters-sheet";
 import { OpsTable } from "@/features/wingraphex/ops-table";
 import { useOpsQuery } from "@/features/wingraphex/wingraphex.queries";
 import type { QueryOpsParams } from "@/features/wingraphex/wingraphex.schemas";
 
 export function DashboardPage() {
-  const [searchInput, setSearchInput] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [filters, setFilters] = useState<OpFilters>(EMPTY_FILTERS);
+  const searchInput = useOpsFiltersStore((state) => state.searchInput);
+  const descricao = useOpsFiltersStore((state) => state.descricao);
+  const filters = useOpsFiltersStore((state) => state.filters);
+  const pagina = useOpsFiltersStore((state) => state.pagina);
+  const setSearchInput = useOpsFiltersStore((state) => state.setSearchInput);
+  const applySearch = useOpsFiltersStore((state) => state.applySearch);
+  const clearSearch = useOpsFiltersStore((state) => state.clearSearch);
+  const applyStoredFilters = useOpsFiltersStore((state) => state.applyFilters);
+  const removeClienteFilter = useOpsFiltersStore((state) => state.removeCliente);
+  const removeDataFilter = useOpsFiltersStore((state) => state.removeData);
+  const setPagina = useOpsFiltersStore((state) => state.setPagina);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [pagina, setPagina] = useState(1);
   const [selectedOps, setSelectedOps] = useState<ReadonlySet<number>>(new Set());
   const [reciboOpen, setReciboOpen] = useState(false);
   const [reciboGerado, setReciboGerado] = useState<ReciboEntrega | null>(null);
@@ -77,21 +82,17 @@ export function DashboardPage() {
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const term = searchInput.trim();
-    setDescricao(term);
-    setPagina(1);
+    applySearch(term);
     setSelectedOps(new Set());
   };
 
   const handleClearSearch = () => {
-    setSearchInput("");
-    setDescricao("");
-    setPagina(1);
+    clearSearch();
     setSelectedOps(new Set());
   };
 
   const applyFilters = (next: OpFilters) => {
-    setFilters(next);
-    setPagina(1);
+    applyStoredFilters(next);
     setSelectedOps(new Set());
   };
 
@@ -113,21 +114,13 @@ export function DashboardPage() {
   };
 
   const removeCliente = () => {
-    setFilters((current) => ({
-      ...current,
-      clienteId: undefined,
-      clienteNome: undefined,
-    }));
-    setPagina(1);
+    removeClienteFilter();
+    setSelectedOps(new Set());
   };
 
   const removeData = () => {
-    setFilters((current) => ({
-      ...current,
-      dataInicio: "",
-      dataFim: "",
-    }));
-    setPagina(1);
+    removeDataFilter();
+    setSelectedOps(new Set());
   };
 
   const dateLabel =
