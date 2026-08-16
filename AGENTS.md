@@ -7,11 +7,12 @@
 - HTTP is done with **axios** (`apps/web/src/api/client.ts` handles the `Authorization` header and the 401 → refresh-token retry flow) and API boundaries/inputs are validated with **zod**. The web exposes one typed function per endpoint in `apps/web/src/api/<domain>.api.ts` — never call `api.*` directly in pages.
 - All non-auth server state in the web app must go through **TanStack Query** (`@tanstack/react-query`, QueryClient in `apps/web/src/app/query-client.ts`, mounted in `providers.tsx`). Every `api/<domain>.api.ts` function is consumed via hooks from `features/<domain>/<domain>.queries.ts` (`queryOptions` + `use<X>Query` + `use<X>Mutation`), with a key factory in `features/<domain>/<domain>.query-keys.ts`; mutations call `queryClient.invalidateQueries({ queryKey: keys.all })` in their `onSuccess`. Auth routes (`login`/`logout`/`refresh`) stay outside TanStack Query (handled by the Zustand auth store and the axios interceptor).
 - Authorization rules must always live in **`@repo/authorization`** (CASL + zod) — it is the single source of truth for what each user can do. Never hard-code role checks (e.g. `user.role === "admin"`) in apps; edit rules in the package (`src/ability.ts`) and consume them via `defineAbilityFor` (web) or `getUserAbility`/`requireAbility` (api, `apps/api/src/lib/authorization.ts`).
-- No test framework or CI is configured in this repo.
+- No CI is configured.
+- Testing uses **Vitest 4** — scripts `test`/`test:watch`/`test:coverage` per package; use `vitest run` programmatically (bare `vitest` never exits). Configs: `apps/api/vitest.config.ts` (node env; **mongodb-memory-server** with a single mongod booted in `src/test/global-setup.ts` and its URI shared to tests via `project.provide`/`inject` — never write it to a file; `src/test/setup.ts` forces hermetic env vars; fixtures em `src/test/factories.ts` (faker), fake wingraphex pool em `src/test/pool.ts`) and `apps/web/vitest.config.ts` (jsdom + **MSW** node em `src/test/server.ts` + Testing Library, `restoreMocks: true`, helpers em `src/test/utils.tsx`). Route tests da API usam `fastify.inject()` contra o `createApp` com DI.
 
 ## Commands (run from repo root)
-- `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm check-types` — Turbo-routed across all packages; filter with `--filter=mirante-web`.
-- App `lint` runs `eslint . --max-warnings 0` — **warnings fail the lint task**.
+- `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm check-types` / `pnpm test` / `pnpm test:coverage` — Turbo-routed across all packages; filter with `--filter=mirante-web` / `--filter=mirante-api`.
+- App `lint` runs `eslint . --max-warnings 0` — **warnings fail the lint task**; test files are covered by `@vitest/eslint-plugin`, `testing-library`, `jest-dom`. Don't introduce deps sem uso nas suites (ex.: `@faker-js/faker`, `@testing-library/user-event`, `@vitest/coverage-v8` são usados).
 - App `check-types` and `build` use `tsc -b` (project references to `tsconfig.app.json` / `tsconfig.node.json`) — don't run bare `tsc` in `apps/*`.
 
 ## Workspace layout

@@ -2,6 +2,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
+import type { MySQLPromisePool } from "@fastify/mysql";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -29,35 +30,46 @@ import {
   wingraphexRoutes,
 } from "./routes/index.ts";
 
-export async function createApp(): Promise<FastifyInstance> {
+export interface CreateAppOptions {
+  mongoUri?: string;
+  wingraphex?: MySQLPromisePool;
+  logger?: boolean;
+}
+
+export async function createApp(
+  options: CreateAppOptions = {},
+): Promise<FastifyInstance> {
   const fastify = Fastify({
-    logger: {
-      level: process.env.LOG_LEVEL ?? "debug",
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          levelFirst: true,
-          translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-          ignore: "pid,hostname",
-          singleLine: true,
-          customColors:
-            "trace:white,warn:yellow,info:cyan,debug:green,error:red,fatal:red,bgRed",
-        },
-      },
-      serializers: {
-        req(request) {
-          return {
-            method: request.method,
-            url: request.url,
-            remoteAddress: request.ip,
-          };
-        },
-        res(reply) {
-          return { statusCode: reply.statusCode };
-        },
-      },
-    },
+    logger:
+      options.logger === false
+        ? false
+        : {
+            level: process.env.LOG_LEVEL ?? "debug",
+            transport: {
+              target: "pino-pretty",
+              options: {
+                colorize: true,
+                levelFirst: true,
+                translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+                ignore: "pid,hostname",
+                singleLine: true,
+                customColors:
+                  "trace:white,warn:yellow,info:cyan,debug:green,error:red,fatal:red,bgRed",
+              },
+            },
+            serializers: {
+              req(request) {
+                return {
+                  method: request.method,
+                  url: request.url,
+                  remoteAddress: request.ip,
+                };
+              },
+              res(reply) {
+                return { statusCode: reply.statusCode };
+              },
+            },
+          },
   }).withTypeProvider<ZodTypeProvider>();
 
   fastify.setValidatorCompiler(validatorCompiler);
@@ -72,8 +84,16 @@ export async function createApp(): Promise<FastifyInstance> {
   await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await fastify.register(cookie, { secret: config.COOKIE_SECRET });
 
-  await fastify.register(mongoosePlugin, { uri: mongoUri });
-  await fastify.register(wingraphexPlugin);
+  await fastify.register(mongoosePlugin, {
+    uri: options.mongoUri ?? mongoUri,
+  });
+  if (options.wingraphex !== undefined) {
+    await fastify.register(wingraphexPlugin, {
+      connection: options.wingraphex,
+    });
+  } else {
+    await fastify.register(wingraphexPlugin);
+  }
   await fastify.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await fastify.register(authPlugin, {
     refreshSecret: config.JWT_REFRESH_SECRET,

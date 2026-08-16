@@ -1,4 +1,4 @@
-import mysql from "@fastify/mysql";
+import mysql, { type MySQLPromisePool } from "@fastify/mysql";
 import type { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
 
@@ -6,10 +6,17 @@ import { wingraphexConfig } from "../config.ts";
 
 export interface WingraphexPluginOptions {
   pool?: Partial<typeof wingraphexConfig>;
+  connection?: MySQLPromisePool;
 }
 
 export const wingraphexPlugin = fp<WingraphexPluginOptions>(
   async function (fastify: FastifyInstance, opts) {
+    if (opts.connection !== undefined) {
+      fastify.decorate("wingraphex", opts.connection);
+      fastify.log.info("Wingraphex MySQL pool injetado (modo de teste)");
+      return;
+    }
+
     await fastify.register(mysql, {
       promise: true,
       ...wingraphexConfig,

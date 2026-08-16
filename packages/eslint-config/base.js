@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import vitest from "@vitest/eslint-plugin";
 import eslintConfigPrettier from "eslint-config-prettier";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import turboPlugin from "eslint-plugin-turbo";
@@ -46,6 +47,15 @@ export const config = [
   {
     plugins: {
       onlyWarn,
+    },
+  },
+  {
+    plugins: {
+      vitest,
+    },
+    files: ["**/*.{test,spec}.{ts,tsx,js,jsx}"],
+    rules: {
+      ...vitest.configs.recommended.rules,
     },
   },
   {

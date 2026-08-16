@@ -1,5 +1,7 @@
 import js from "@eslint/js";
+import pluginJestDom from "eslint-plugin-jest-dom";
 import pluginQuery from "@tanstack/eslint-plugin-query";
+import pluginTestingLibrary from "eslint-plugin-testing-library";
 import eslintConfigPrettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import pluginReactHooks from "eslint-plugin-react-hooks";
@@ -36,6 +38,24 @@ export const config = [
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.
       "react/react-in-jsx-scope": "off",
+    },
+  },
+  {
+    plugins: {
+      "testing-library": pluginTestingLibrary,
+    },
+    files: ["**/*.{test,spec}.{ts,tsx}"],
+    rules: {
+      ...pluginTestingLibrary.configs["flat/react"].rules,
+    },
+  },
+  {
+    plugins: {
+      "jest-dom": pluginJestDom,
+    },
+    files: ["**/*.{test,spec}.{ts,tsx}"],
+    rules: {
+      ...pluginJestDom.configs["flat/recommended"].rules,
     },
   },
 ];
