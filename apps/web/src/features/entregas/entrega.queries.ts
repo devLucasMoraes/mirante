@@ -20,6 +20,7 @@ export function reciboPorOpQueryOptions(opId: number) {
     queryKey: entregaKeys.op(opId),
     queryFn: () => reciboPorOp(opId),
     enabled: opId > 0,
+    staleTime: 5_000,
   });
 }
 
