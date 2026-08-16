@@ -2,6 +2,7 @@ export * from "./cliente-combobox";
 export * from "./ops-filters.store";
 export * from "./ops-filters-sheet";
 export * from "./ops-pagination";
+export * from "./ops-selection.store";
 export * from "./ops-table";
 export * from "./wingraphex.format";
 export * from "./wingraphex.queries";

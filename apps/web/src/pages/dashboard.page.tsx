@@ -20,6 +20,7 @@ import { ReciboDialog } from "@/features/entregas/recibo-dialog";
 import { useOpsFiltersStore } from "@/features/wingraphex/ops-filters.store";
 import type { OpFilters } from "@/features/wingraphex/ops-filters-sheet";
 import { OpsFiltersSheet } from "@/features/wingraphex/ops-filters-sheet";
+import { useOpsSelectionStore } from "@/features/wingraphex/ops-selection.store";
 import { OpsTable } from "@/features/wingraphex/ops-table";
 import { useOpsQuery } from "@/features/wingraphex/wingraphex.queries";
 import type { QueryOpsParams } from "@/features/wingraphex/wingraphex.schemas";
@@ -36,8 +37,10 @@ export function DashboardPage() {
   const removeClienteFilter = useOpsFiltersStore((state) => state.removeCliente);
   const removeDataFilter = useOpsFiltersStore((state) => state.removeData);
   const setPagina = useOpsFiltersStore((state) => state.setPagina);
+  const selecionadas = useOpsSelectionStore((state) => state.selecionadas);
+  const toggleSelection = useOpsSelectionStore((state) => state.toggle);
+  const clearSelecionadas = useOpsSelectionStore((state) => state.clear);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedOps, setSelectedOps] = useState<ReadonlySet<number>>(new Set());
   const [reciboOpen, setReciboOpen] = useState(false);
   const [reciboGerado, setReciboGerado] = useState<ReciboEntrega | null>(null);
   const [historicoOp, setHistoricoOp] = useState<number | null>(null);
@@ -68,12 +71,9 @@ export function DashboardPage() {
     return mapa;
   }, [opsItens]);
 
-  const selecionadas = useMemo(
-    () =>
-      Array.from(selectedOps)
-        .map((op) => opsPorId.get(op))
-        .filter((item) => item !== undefined),
-    [selectedOps, opsPorId],
+  const selectedOps = useMemo(
+    () => new Set(selecionadas.map((item) => item.op)),
+    [selecionadas],
   );
 
   const opHistorico = historicoOp !== null ? opsPorId.get(historicoOp) : undefined;
@@ -83,44 +83,39 @@ export function DashboardPage() {
     event.preventDefault();
     const term = searchInput.trim();
     applySearch(term);
-    setSelectedOps(new Set());
   };
 
   const handleClearSearch = () => {
     clearSearch();
-    setSelectedOps(new Set());
   };
 
   const applyFilters = (next: OpFilters) => {
     applyStoredFilters(next);
-    setSelectedOps(new Set());
   };
 
   const handlePageChange = (page: number) => {
     setPagina(page);
-    setSelectedOps(new Set());
   };
 
   const toggleSelect = (op: number) => {
-    setSelectedOps((current) => {
-      const next = new Set(current);
-      if (next.has(op)) {
-        next.delete(op);
-      } else {
-        next.add(op);
-      }
-      return next;
-    });
+    const item = opsPorId.get(op);
+    if (item) {
+      toggleSelection({
+        op: item.op,
+        cliente: item.cliente,
+        descricao: item.descricao,
+        qtd_total: item.qtd_total,
+        entregue: item.entregue,
+      });
+    }
   };
 
   const removeCliente = () => {
     removeClienteFilter();
-    setSelectedOps(new Set());
   };
 
   const removeData = () => {
     removeDataFilter();
-    setSelectedOps(new Set());
   };
 
   const dateLabel =
@@ -272,7 +267,7 @@ export function DashboardPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setSelectedOps(new Set())}
+              onClick={clearSelecionadas}
             >
               Limpar
             </Button>
@@ -286,20 +281,12 @@ export function DashboardPage() {
 
       <ReciboDialog
         open={reciboOpen}
-        onOpenChange={(open) => {
-          setReciboOpen(open);
-          if (!open) {
-            setSelectedOps(new Set());
-          }
+        onOpenChange={setReciboOpen}
+        onSalvo={(recibo) => {
+          setReciboGerado(recibo);
+          clearSelecionadas();
         }}
-        onSalvo={setReciboGerado}
-        itens={selecionadas.map((item) => ({
-          op: item.op,
-          cliente: item.cliente,
-          descricao: item.descricao,
-          qtd_total: item.qtd_total,
-          entregue: item.entregue,
-        }))}
+        itens={selecionadas}
       />
 
       <ReciboAcoesDialog
