@@ -5,6 +5,12 @@ import { FilePlus2, Search, SlidersHorizontal, X } from "lucide-react";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
 
 import { useReciboPorOpQuery } from "@/features/entregas/entrega.queries";
 import type { ReciboEntrega } from "@/features/entregas/entrega.schemas";
@@ -76,6 +82,13 @@ export function DashboardPage() {
     setSelectedOps(new Set());
   };
 
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setDescricao("");
+    setPagina(1);
+    setSelectedOps(new Set());
+  };
+
   const applyFilters = (next: OpFilters) => {
     setFilters(next);
     setPagina(1);
@@ -143,13 +156,32 @@ export function DashboardPage() {
           className="flex flex-1 gap-2"
           role="search"
         >
-          <Input
-            name="descricao"
-            placeholder="Busque por um termo na descrição..."
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            className="flex-1"
-          />
+          <div className="relative flex-1">
+            <Input
+              name="descricao"
+              placeholder="Busque por um termo na descrição..."
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              className="pr-9"
+            />
+            {searchInput !== "" ? (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Limpar busca"
+                      onClick={handleClearSearch}
+                      className="absolute top-1/2 right-2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground transition-opacity hover:opacity-70"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Limpar</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
+          </div>
           <Button type="submit">
             <Search />
             Buscar
