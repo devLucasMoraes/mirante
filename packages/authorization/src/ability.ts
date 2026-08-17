@@ -18,6 +18,7 @@ export function defineRulesFor(role: UserRole): RawRuleOf<AppAbility>[] {
 
   builder.can("read", "WingraphexOp");
   builder.can(["read", "create"], "ReciboEntrega");
+  builder.can("read", "PcpSetor");
 
   if (role === "admin") {
     builder.can("manage", "all");
@@ -37,6 +38,7 @@ export function defineAbilityFor(user: User): AppAbility {
     "usuario.id": user.id,
   } as unknown as ReciboAutorConditions;
   builder.can("delete", "ReciboEntrega", condicaoAutor);
+  builder.can("read", "PcpSetor");
 
   if (user.role === "admin") {
     builder.can("manage", "all");

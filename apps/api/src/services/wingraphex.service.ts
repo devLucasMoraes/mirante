@@ -42,6 +42,16 @@ interface FinanceiroNotaDbRow extends MySQLRowDataPacket {
   SALDO: string | number | null;
 }
 
+interface EquipamentoDbRow extends MySQLRowDataPacket {
+  CODIGO: string | number;
+  DESCRICAO: string | null;
+}
+
+export interface WingraphexEquipamento {
+  codigo: number;
+  nome: string;
+}
+
 export interface QueryOpsByDescriptionInput {
   descricao?: string;
   clienteId?: number;
@@ -362,6 +372,27 @@ export async function queryOpsByDescription(
     };
   } catch (err) {
     fastify.log.error({ err }, "Wingraphex query failed");
+    throw new AppError(503, "Banco Wingraphex indisponível.");
+  }
+}
+
+export async function queryEquipamentos(
+  fastify: FastifyInstance,
+): Promise<WingraphexEquipamento[]> {
+  const sql = `
+    SELECT CODIGO, DESCRICAO
+    FROM equipamento
+    WHERE EMP_ID=1 AND (DESATIVADO IS NULL OR DESATIVADO <> 'S')
+    ORDER BY CODIGO`;
+
+  try {
+    const [rows] = await fastify.wingraphex.query<EquipamentoDbRow[]>(sql);
+    return rows.map((row) => ({
+      codigo: Number(row.CODIGO),
+      nome: row.DESCRICAO ?? "",
+    }));
+  } catch (err) {
+    fastify.log.error({ err }, "Wingraphex equipamentos query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");
   }
 }

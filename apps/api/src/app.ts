@@ -26,6 +26,7 @@ import {
   authRoutes,
   entregaRoutes,
   healthRoutes,
+  pcpRoutes,
   userRoutes,
   wingraphexRoutes,
 } from "./routes/index.ts";
@@ -128,6 +129,7 @@ export async function createApp(
   await fastify.register(authRoutes, { prefix: "/api/auth" });
   await fastify.register(userRoutes, { prefix: "/api" });
   await fastify.register(entregaRoutes, { prefix: "/api/entregas" });
+  await fastify.register(pcpRoutes, { prefix: "/api/pcp" });
   await fastify.register(wingraphexRoutes, { prefix: "/api/wingraphex" });
 
   setErrorHandler(fastify);

@@ -7,6 +7,7 @@ import {
   Menu,
   UserRound,
   Users,
+  Workflow,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
@@ -96,6 +97,11 @@ function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
       label: "Ordens de produção",
       href: "/dashboard",
       icon: ClipboardList,
+    },
+    {
+      label: "PCP",
+      href: "/dashboard/pcp",
+      icon: Workflow,
     },
     { label: "Perfil", href: "/dashboard/perfil", icon: UserRound },
     ...(isAdmin

@@ -10,6 +10,7 @@ import { DashboardPage } from "@/pages/dashboard.page";
 import { HomePage } from "@/pages/home/home.page";
 import { LoginPage } from "@/pages/login.page";
 import { NotFoundPage } from "@/pages/not-found.page";
+import { PcpPage } from "@/pages/pcp.page";
 import { ProfilePage } from "@/pages/profile.page";
 import { UnauthorizedPage } from "@/pages/unauthorized.page";
 import { UsersPage } from "@/pages/users.page";
@@ -32,6 +33,7 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/pcp" element={<PcpPage />} />
           <Route path="/dashboard/perfil" element={<ProfilePage />} />
           <Route element={<AdminRoute />}>
             <Route path="/dashboard/usuarios" element={<UsersPage />} />

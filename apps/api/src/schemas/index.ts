@@ -12,6 +12,22 @@ export {
   reciboIdParamSchema,
 } from "./entrega.schema.ts";
 export {
+  type CriarSetorPayload,
+  criarSetorSchema,
+  equipamentoCodigoParamSchema,
+  type EquipamentoComSetor,
+  equipamentoComSetorSchema,
+  objectIdParamSchema,
+  type PcpSetorResponse,
+  pcpSetorResponseSchema,
+  type RenomearSetorPayload,
+  renomearSetorSchema,
+  type ReordenarSetoresPayload,
+  reordenarSetoresSchema,
+  type VincularSetorPayload,
+  vincularSetorSchema,
+} from "./pcp.schema.ts";
+export {
   type CreateUserPayload,
   createUserSchema,
   type UpdateUserPayload,

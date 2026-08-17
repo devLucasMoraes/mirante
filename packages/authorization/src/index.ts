@@ -15,6 +15,10 @@ export {
   userSchema,
 } from "./schemas.ts";
 export {
+  pcpSetorSubject,
+  pcpSetorSubjectSchema,
+} from "./subjects/pcp-setor.ts";
+export {
   reciboEntregaSubject,
   reciboEntregaSubjectSchema,
 } from "./subjects/recibo-entrega.ts";
