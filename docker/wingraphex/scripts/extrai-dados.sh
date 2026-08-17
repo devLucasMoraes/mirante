@@ -62,6 +62,26 @@ dump() {
 	fi
 }
 
+mysql_q() {
+	MYSQL_PWD="${MYSQL_PWD}" mysql --default-character-set=utf8 \
+		-h "${DBHOST}" -P "${DBPORT}" -u "${DBUSER}" "${DBNAME}" -N -B -e "$1"
+}
+
+# --- Empresa 2 (editora): derivar ID sets completos (somente leitura) ---
+# A empresa 2 e pequena (171 OPs, 174 orcamentos, 115 docs, 284 titulos) — a amostra
+# inclui TUDO dela. As tabelas de catalogo (pessoa/cliente/material/estoque) sao
+# restritas ao que a empresa 2 referencia.
+emp2_pessoas="$(mysql_q "SELECT DISTINCT CLI_ID FROM ordemservico WHERE EMP_ID=2")"
+emp2_docs="$(mysql_q "SELECT DISTINCT DOC_ID FROM documentocabecalho WHERE EMP_ID=2")"
+emp2_chaves="$(mysql_q "SELECT DISTINCT CHAVE FROM financeiro WHERE EMP_ID=2")"
+emp2_mtrs="$(mysql_q "SELECT DISTINCT CODIGOMATERIAL FROM documentoitem WHERE EMP_ID=2")"
+emp2_pessoas="$(echo "${emp2_pessoas}" | tr '\n' ',' | sed 's/,$//')"
+emp2_docs="$(echo "${emp2_docs}" | tr '\n' ',' | sed 's/,$//')"
+emp2_chaves="$(echo "${emp2_chaves}" | tr '\n' ',' | sed 's/,$//')"
+emp2_mtrs="$(echo "${emp2_mtrs}" | tr '\n' ',' | sed 's/,$//')"
+echo "Empresa 2: pessoas=${emp2_pessoas}"
+echo "Empresa 2: docs=${emp2_docs}"
+
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 
@@ -77,6 +97,7 @@ trap 'rm -rf "${tmp}"' EXIT
 } > "${out_part:=${tmp}/out.sql}"
 
 # ============ CADASTROS ============
+dump empresa
 dump pessoa        "PES_ID IN (${PESSOAS})"
 dump cliente       "EMP_ID=1 AND PES_ID IN (${PESSOAS})"
 dump vendedor      "EMP_ID=1"
@@ -125,6 +146,34 @@ dump carteira
 dump material      "EMP_ID=1 AND MTR_ID IN (SELECT DISTINCT CODIGOMATERIAL FROM documentoitem WHERE EMP_ID=1 AND CLASSIFICACAO=0 AND DOC_ID IN (${DOCS})) OR (EMP_ID=1 AND MTR_ID='69125')"
 dump estoque       "EMP_ID=1 AND DOC_ID IN (${DOCS}) ORDER BY CODIGO LIMIT 100"
 dump localestoque
+
+# ============ EMPRESA 2 (tudo) ============
+[ -n "${emp2_pessoas}" ] && dump pessoa  "EMP_ID=2 AND PES_ID IN (${emp2_pessoas})"
+[ -n "${emp2_pessoas}" ] && dump cliente "EMP_ID=2 AND PES_ID IN (${emp2_pessoas})"
+dump vendedor                 "EMP_ID=2"
+dump formapagto               "EMP_ID=2"
+dump orcamento                "EMP_ID=2"
+dump qtorcamento              "EMP_ID=2"
+dump ordemservico             "EMP_ID=2"
+dump op                       "EMP_ID=2"
+dump ordemservicostatus       "EMP_ID=2"
+dump ordemservplanejentrega   "EMP_ID=2"
+dump pcptrabalhos             "EMP_ID=2"
+dump pcpprocessos             "EMP_ID=2"
+dump pcpapontamento           "EMP_ID=2"
+dump equipamento              "EMP_ID=2"
+dump maquina                  "EMP_ID=2"
+dump equipamentomaquinas      "EMP_ID=2"
+dump documentocabecalho       "EMP_ID=2"
+dump documentoitem            "EMP_ID=2"
+dump documentocalculo         "EMP_ID=2"
+dump documentoitemcalculo     "EMP_ID=2"
+dump documentorodape          "EMP_ID=2"
+dump financeiro               "EMP_ID=2"
+[ -n "${emp2_chaves}" ] && dump receber "EMP_ID=2 AND CHAVE IN (${emp2_chaves})"
+[ -n "${emp2_chaves}" ] && dump pagar   "EMP_ID=2 AND CHAVE IN (${emp2_chaves})"
+[ -n "${emp2_mtrs}" ] && dump material  "EMP_ID=2 AND MTR_ID IN (${emp2_mtrs})"
+[ -n "${emp2_docs}" ] && dump estoque   "EMP_ID=2 AND DOC_ID IN (${emp2_docs})"
 
 # ============ INFRA ============
 dump _dicionario

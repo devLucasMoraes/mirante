@@ -6,7 +6,7 @@
 - **558 tabelas**, ~5,1 GB, MySQL **5.7.26** em `192.168.1.16:3307`.
 - **552 InnoDB + 5 MyISAM** (+1 sem engine definida).
 - **Sem FKs declaradas** — relacionamento por convenção de chaves (colunas com índice `MUL`).
-- **Empresas:** `EMP_ID` 1 e 2 (cadastros duplicados, ex. `formapagto` tem 28 por empresa).
+- **Empresas:** `EMP_ID` 1 e 2 (cadastros duplicados, ex. `formapagto` tem 28 por empresa). Perfil completo das duas (razão/fantasia/CNPJ, volume por tabela, particularidades) → `empresas.md`.
 - **Colunas padrão:** `DATA_ALTERACAO` + `USER_ALTERACAO` em todas as tabelas.
 
 ## Tabelas por módulo

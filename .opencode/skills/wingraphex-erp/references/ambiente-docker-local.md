@@ -19,6 +19,27 @@ docker/wingraphex/
     └── incrementa-ops.sh        → ANEXA 30 OPs completas de 5 clientes a 02-dados.sql (somente leitura)
 ```
 
+## 2026-08-17 — Amostra cobre as DUAS empresas (tabela `empresa` + dados da emp 2)
+- **O que foi testado:** atualizar `extrai-dados.sh` para extrair a tabela `empresa` (2 linhas) e **todo**
+  o dado da empresa 2 (`EMP_ID=2`): OPs/orçamentos/docs/financeiro/PCP/equipamentos/máquinas/clientes.
+  Perfil das duas empresas → `empresas.md`.
+- **Resultado:** funciona — réplica recriada com `down -v` + `up -d`, carga sem erro de PK; `SELECT
+  COUNT(*) FROM ordemservico GROUP BY EMP_ID` → (1, 35) e (2, 171) no corte da amostra.
+- **Como reproduzir:**
+  ```bash
+  bash docker/wingraphex/scripts/extrai-dados.sh      # base empresa 1 (IDs fixos) + empresa 2 (tudo) + tabela empresa
+  ./docker/wingraphex/scripts/incrementa-ops.sh        # re-anexa as +30 OPs da empresa 1 (dedup automático)
+  pnpm db:wingraphex:reset                             # down -v + up -d (recarrega o volume)
+  ```
+- **Observações:**
+  - `empresa` agora tem as 2 linhas; `_parametroempresa` já tinha.
+  - Empresa 2: 171 `ordemservico`/`op`, 174 `orcamento`/`qtorcamento`, 115 `documentocabecalho` (série
+    CI), 284 `financeiro`, 39 `equipamento` (códigos próprios 3/4/10/12/14/15/16/22/24/27…), 38
+    `maquina`, 31 `equipamentomaquinas`, 39 `pcpprocessos`, 171 `ordemservplanejentrega`; clientes
+    10074 + faixa 109xx (base distinta da empresa 1).
+  - A API (`wingraphex.service.ts`) segue fixa em `EMP_ID=1` — a réplica tem a empresa 2 para
+    validação de SQL/relatórios do skill, não para o app.
+
 ## 2026-08-17 — Amostra regenerada com catálogos PCP (equipamento/maquina/equipamentomaquinas)
 - **O que foi testado:** regenerar `02-dados.sql` do zero com `scripts/extrai-dados.sh` (que passou a
   incluir o catálogo PCP em 16/08) seguido de `scripts/incrementa-ops.sh` (+30 OPs), e recriar a réplica.
