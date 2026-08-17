@@ -10,7 +10,7 @@ beforeEach(() => {
   useOpsFiltersStore.setState({
     searchInput: "",
     descricao: "",
-    filters: { dataInicio: "", dataFim: "" },
+    filters: { dataInicio: "", dataFim: "", ordenarPor: "emissao", direcao: "desc" },
     pagina: 1,
   });
 });
@@ -26,6 +26,8 @@ function persistedState() {
       clienteNome?: string;
       dataInicio: string;
       dataFim: string;
+      ordenarPor: "emissao" | "prevista";
+      direcao: "asc" | "desc";
     };
     pagina: number;
   } };
@@ -36,7 +38,12 @@ describe("ops-filters.store", () => {
     const state = useOpsFiltersStore.getState();
     expect(state.searchInput).toBe("");
     expect(state.descricao).toBe("");
-    expect(state.filters).toEqual({ dataInicio: "", dataFim: "" });
+    expect(state.filters).toEqual({
+      dataInicio: "",
+      dataFim: "",
+      ordenarPor: "emissao",
+      direcao: "desc",
+    });
     expect(state.pagina).toBe(1);
 
     useOpsFiltersStore.getState().setSearchInput("cartaz");
@@ -81,6 +88,8 @@ describe("ops-filters.store", () => {
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",
         dataFim: "2026-03-31",
+        ordenarPor: "emissao",
+        direcao: "desc",
       });
 
     const state = useOpsFiltersStore.getState();
@@ -101,7 +110,7 @@ describe("ops-filters.store", () => {
   test("setPagina persiste e applySearch mantém o filtro", () => {
     useOpsFiltersStore
       .getState()
-      .applyFilters({ dataInicio: "2026-01-01", dataFim: "2026-01-31" });
+      .applyFilters({ dataInicio: "2026-01-01", dataFim: "2026-01-31", ordenarPor: "emissao", direcao: "desc" });
     useOpsFiltersStore.getState().setPagina(2);
 
     useOpsFiltersStore.getState().applySearch("caixa");
@@ -121,6 +130,8 @@ describe("ops-filters.store", () => {
         clienteFantasia: "Bella",
         dataInicio: "2026-01-01",
         dataFim: "2026-03-31",
+        ordenarPor: "emissao",
+        direcao: "desc",
       });
 
     useOpsFiltersStore.getState().removeCliente();
@@ -141,6 +152,8 @@ describe("ops-filters.store", () => {
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",
         dataFim: "2026-03-31",
+        ordenarPor: "emissao",
+        direcao: "desc",
       });
 
     useOpsFiltersStore.getState().removeData();
@@ -160,6 +173,8 @@ describe("ops-filters.store", () => {
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",
         dataFim: "2026-03-31",
+        ordenarPor: "emissao",
+        direcao: "desc",
       });
 
     useOpsFiltersStore.getState().clearFilters();

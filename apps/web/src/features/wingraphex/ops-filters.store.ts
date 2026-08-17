@@ -67,6 +67,14 @@ export const useOpsFiltersStore = create<OpsFiltersState>()(
     {
       name: OPS_FILTERS_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const state = persisted as Partial<OpsFiltersState> | undefined;
+        return {
+          ...current,
+          ...state,
+          filters: { ...EMPTY_FILTERS, ...(state?.filters ?? {}) },
+        };
+      },
     },
   ),
 );

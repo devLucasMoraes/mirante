@@ -10,6 +10,8 @@ export const queryOpsQuerySchema = z
     clienteId: z.coerce.number().int().positive().optional(),
     dataInicio: dateStringSchema.optional(),
     dataFim: dateStringSchema.optional(),
+    ordenarPor: z.enum(["emissao", "prevista"]).default("emissao"),
+    direcao: z.enum(["asc", "desc"]).default("desc"),
     pagina: z.coerce.number().int().min(1).default(1),
     limite: z.coerce.number().int().min(1).max(1000).default(100),
   })
@@ -76,6 +78,7 @@ export const wingraphexOpSchema = z.object({
   entregue: z.coerce.number().default(0),
   valor_servico: z.coerce.number(),
   data_emissao: z.string(),
+  data_prevista: z.string().nullable(),
   status: z.string(),
   faturamento: z.object({
     valor_faturado: z.coerce.number(),

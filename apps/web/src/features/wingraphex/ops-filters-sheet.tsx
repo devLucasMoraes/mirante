@@ -6,6 +6,13 @@ import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/select";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -16,17 +23,24 @@ import {
 
 import { ClienteCombobox } from "./cliente-combobox";
 
+export type OrdenacaoOps = "emissao" | "prevista";
+export type DirecaoOps = "asc" | "desc";
+
 export type OpFilters = {
   clienteId?: number;
   clienteNome?: string;
   clienteFantasia?: string;
   dataInicio: string;
   dataFim: string;
+  ordenarPor: OrdenacaoOps;
+  direcao: DirecaoOps;
 };
 
 export const EMPTY_FILTERS: OpFilters = {
   dataInicio: "",
   dataFim: "",
+  ordenarPor: "emissao",
+  direcao: "desc",
 };
 
 export function OpsFiltersSheet({
@@ -78,7 +92,8 @@ export function OpsFiltersSheet({
         <SheetHeader>
           <SheetTitle>Filtros</SheetTitle>
           <SheetDescription>
-            Refine a busca por cliente e por período de emissão.
+            Refine a busca por cliente, período e ordenação. O período segue a
+            ordenação escolhida (emissão ou data prevista).
           </SheetDescription>
         </SheetHeader>
 
@@ -123,7 +138,11 @@ export function OpsFiltersSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>Período</Label>
+            <Label>
+              {draft.ordenarPor === "prevista"
+                ? "Período da data prevista"
+                : "Período de emissão"}
+            </Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label
@@ -154,6 +173,62 @@ export function OpsFiltersSheet({
                   min={draft.dataInicio || undefined}
                   onChange={(event) => set("dataFim")(event.target.value)}
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Ordenação</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="ops-ordem-campo"
+                  className="text-xs font-normal text-muted-foreground"
+                >
+                  Ordenar por
+                </Label>
+                <Select
+                  value={draft.ordenarPor}
+                  onValueChange={(value) =>
+                    setDraft((current) => ({
+                      ...current,
+                      ordenarPor: value as OrdenacaoOps,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="ops-ordem-campo" className="w-full">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="emissao">Emissão</SelectItem>
+                    <SelectItem value="prevista">Data prevista</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="ops-ordem-direcao"
+                  className="text-xs font-normal text-muted-foreground"
+                >
+                  Direção
+                </Label>
+                <Select
+                  value={draft.direcao}
+                  onValueChange={(value) =>
+                    setDraft((current) => ({
+                      ...current,
+                      direcao: value as DirecaoOps,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="ops-ordem-direcao" className="w-full">
+                    <SelectValue placeholder="Direção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Crescente</SelectItem>
+                    <SelectItem value="desc">Decrescente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

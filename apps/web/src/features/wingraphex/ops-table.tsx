@@ -237,13 +237,23 @@ function OpCard({
             <span className="font-medium tabular-nums">OP {op.op}</span>
             <StatusBadge op={op} />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
             Emissão:{" "}
             <time
               dateTime={op.data_emissao}
               className="whitespace-nowrap tabular-nums"
             >
               {formatDate(op.data_emissao)}
+            </time>
+            <span aria-hidden className="text-muted-foreground/50">
+              ·
+            </span>
+            Prevista:{" "}
+            <time
+              dateTime={op.data_prevista ?? undefined}
+              className="whitespace-nowrap tabular-nums"
+            >
+              {op.data_prevista ? formatDate(op.data_prevista) : "—"}
             </time>
           </p>
         </div>

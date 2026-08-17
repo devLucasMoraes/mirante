@@ -58,6 +58,8 @@ export function DashboardPage() {
     clienteId: filters.clienteId,
     dataInicio: filters.dataInicio || undefined,
     dataFim: filters.dataFim || undefined,
+    ordenarPor: filters.ordenarPor,
+    direcao: filters.direcao,
     pagina,
   };
   const opsQuery = useOpsQuery(params);

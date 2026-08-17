@@ -36,7 +36,10 @@ describe("rotas do wingraphex", () => {
   beforeEach(() => {
     query.mockReset();
     query.mockImplementation(async (sql: string) => {
-      if (sql.includes("ORDER BY os.ORS_DATA")) {
+      if (
+        sql.includes("ORDER BY os.ORS_DATA") ||
+        sql.includes("ORDER BY planej.data_prevista")
+      ) {
         return [[opRow], []];
       }
       if (sql.includes("SELECT COUNT(*) AS total")) {
@@ -88,9 +91,103 @@ describe("rotas do wingraphex", () => {
       qtd_total: Number(opRow.qtd_total),
       valor_servico: Number(opRow.valor_servico),
       entregue: 0,
+      data_prevista: opRow.data_prevista,
     });
     expect(body.total).toBe(1);
     expect(body.totalPaginas).toBe(1);
+  });
+
+  test("consulta OPs ordena por data prevista crescente", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: {
+        descricao: "cartao",
+        ordenarPor: "prevista",
+        direcao: "asc",
+        pagina: "1",
+        limite: "10",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.itens).toHaveLength(1);
+    expect(body.itens[0].data_prevista).toBe(opRow.data_prevista);
+
+    const mainSql = query.mock.calls
+      .map((call) => String(call[0]))
+      .find((sql) => sql.includes("ORDER BY planej.data_prevista"));
+    expect(mainSql).toContain("ORDER BY planej.data_prevista IS NULL ASC");
+    expect(mainSql).toContain("FROM ordemservplanejentrega ple");
+  });
+
+  test("consulta OPs ordenada por data prevista aplica período na prevista", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: {
+        descricao: "cartao",
+        ordenarPor: "prevista",
+        direcao: "asc",
+        dataInicio: "2026-07-01",
+        dataFim: "2026-09-30",
+        pagina: "1",
+        limite: "10",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const calls = query.mock.calls.map((call) => String(call[0]));
+    const mainSql = calls.find((sql) =>
+      sql.includes("ORDER BY planej.data_prevista"),
+    );
+    expect(mainSql).toContain("planej.data_prevista >= ?");
+    expect(mainSql).toContain("planej.data_prevista <= ?");
+    expect(mainSql).not.toContain("os4.ORS_DATA");
+
+    const countSql = calls.find((sql) =>
+      sql.includes("SELECT COUNT(*) AS total"),
+    );
+    expect(countSql).toContain("FROM ordemservplanejentrega ple");
+    expect(countSql).toContain("planej.data_prevista >= ?");
+  });
+
+  test("consulta OPs ordenada por emissão aplica período na emissão", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: {
+        descricao: "cartao",
+        ordenarPor: "emissao",
+        direcao: "desc",
+        dataInicio: "2026-07-01",
+        dataFim: "2026-09-30",
+        pagina: "1",
+        limite: "10",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const calls = query.mock.calls.map((call) => String(call[0]));
+    const mainSql = calls.find((sql) => sql.includes("ORDER BY os.ORS_DATA"));
+    expect(mainSql).toContain("os.ORS_DATA >= ?");
+    expect(mainSql).toContain("os.ORS_DATA <= ?");
+    expect(mainSql).not.toContain("planej.data_prevista >=");
+
+    const countSql = calls.find((sql) =>
+      sql.includes("SELECT COUNT(*) AS total"),
+    );
+    expect(countSql).toContain("os.ORS_DATA >= ?");
+    expect(countSql).not.toContain("FROM ordemservplanejentrega");
   });
 
   test("consulta clientes", async () => {

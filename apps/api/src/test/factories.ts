@@ -35,6 +35,7 @@ export interface FakeOpRow {
   qtd_total: string;
   valor_servico: string;
   data_emissao: string;
+  data_prevista: string | null;
   status: string;
   pcp_processos: string;
   pcp_finalizados: string;
@@ -48,6 +49,7 @@ export function createFakeOpRow(): FakeOpRow {
     qtd_total: faker.number.int({ min: 100, max: 100_000 }).toString(),
     valor_servico: faker.commerce.price({ min: 1, max: 5_000, dec: 2 }),
     data_emissao: "2026-08-01",
+    data_prevista: "2026-08-21",
     status: "N",
     pcp_processos: "2",
     pcp_finalizados: "1",

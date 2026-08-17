@@ -26,6 +26,8 @@ function hasOpsCriteria(params: QueryOpsParams): boolean {
 export function opsQueryOptions(params: QueryOpsParams) {
   const normalized: QueryOpsParams = {
     ...params,
+    ordenarPor: params.ordenarPor ?? "emissao",
+    direcao: params.direcao ?? "desc",
     pagina: params.pagina ?? 1,
     limite: OPS_PER_PAGE,
   };

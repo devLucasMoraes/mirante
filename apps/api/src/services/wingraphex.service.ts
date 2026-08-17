@@ -22,6 +22,7 @@ interface WingraphexOpDbRow extends MySQLRowDataPacket {
   qtd_total: string | number | null;
   valor_servico: string | number | null;
   data_emissao: string | null;
+  data_prevista: string | null;
   status: string | null;
   pcp_processos: string | number | null;
   pcp_finalizados: string | number | null;
@@ -79,6 +80,8 @@ export interface QueryOpsByDescriptionInput {
   clienteId?: number;
   dataInicio?: string;
   dataFim?: string;
+  ordenarPor: "emissao" | "prevista";
+  direcao: "asc" | "desc";
   pagina: number;
   limite: number;
 }
@@ -119,16 +122,39 @@ function buildOpsWhere(
     clauses.push(`${col("CLI_ID")} = ?`);
     params.push(opts.clienteId);
   }
+
+  return { sql: `WHERE ${clauses.join(" AND ")}`, params };
+}
+
+function buildOpsPeriod(
+  column: string,
+  opts: QueryOpsByDescriptionInput,
+): { sql: string; params: (string | number)[] } {
+  const clauses: string[] = [];
+  const params: (string | number)[] = [];
+
   if (opts.dataInicio !== undefined) {
-    clauses.push(`${col("ORS_DATA")} >= ?`);
+    clauses.push(`${column} >= ?`);
     params.push(opts.dataInicio);
   }
   if (opts.dataFim !== undefined) {
-    clauses.push(`${col("ORS_DATA")} <= ?`);
+    clauses.push(`${column} <= ?`);
     params.push(opts.dataFim);
   }
 
-  return { sql: `WHERE ${clauses.join(" AND ")}`, params };
+  return {
+    sql: clauses.length > 0 ? ` AND ${clauses.join(" AND ")}` : "",
+    params,
+  };
+}
+
+function buildOpsOrderBy(input: QueryOpsByDescriptionInput): string {
+  const direction = input.direcao === "asc" ? "ASC" : "DESC";
+
+  if (input.ordenarPor === "prevista") {
+    return `ORDER BY planej.data_prevista IS NULL ASC, planej.data_prevista ${direction}, os.ORS_ID ${direction}`;
+  }
+  return `ORDER BY os.ORS_DATA ${direction}, os.ORS_ID ${direction}`;
 }
 
 function toNumber(value: string | number | null): number {
@@ -152,6 +178,7 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
     entregue: 0,
     valor_servico: toNumber(row.valor_servico),
     data_emissao: row.data_emissao ?? "",
+    data_prevista: row.data_prevista ?? null,
     status: row.status ?? "",
     faturamento: { valor_faturado: 0, quantidade_faturada: 0, notas: [] },
     financeiro: { pago: 0, saldo: 0 },
@@ -342,16 +369,53 @@ export async function queryOpsByDescription(
   fastify: FastifyInstance,
   input: QueryOpsByDescriptionInput,
 ): Promise<WingraphexOpsResponse> {
-  const pcpWhere = buildOpsWhere("os3", input);
-  const mainWhere = buildOpsWhere("os", input);
+  const byPrevista = input.ordenarPor === "prevista";
+
+  const baseWhere = (alias: string) => buildOpsWhere(alias, input);
+  const emissionPeriod = (alias: string) =>
+    buildOpsPeriod(`${alias}.ORS_DATA`, input);
+  const previstaPeriod = () =>
+    buildOpsPeriod("planej.data_prevista", input);
+
+  const mainWhere = baseWhere("os");
+  const mainPeriod = byPrevista ? previstaPeriod() : emissionPeriod("os");
+  const mainSql = `${mainWhere.sql}${mainPeriod.sql}`;
+  const mainParams = [...mainWhere.params, ...mainPeriod.params];
+
+  const planejWhere = baseWhere("os4");
+  const planejPeriod = byPrevista
+    ? { sql: "", params: [] }
+    : emissionPeriod("os4");
+  const planejSql = `${planejWhere.sql}${planejPeriod.sql}`;
+  const planejParams = [...planejWhere.params, ...planejPeriod.params];
+
+  const pcpWhere = baseWhere("os3");
+  const pcpPeriod = byPrevista ? { sql: "", params: [] } : emissionPeriod("os3");
+  const pcpSql = `${pcpWhere.sql}${pcpPeriod.sql}`;
+  const pcpParams = [...pcpWhere.params, ...pcpPeriod.params];
 
   const offset = (input.pagina - 1) * input.limite;
+
+  const planejJoin = `
+    LEFT JOIN (
+      SELECT ple.ORS_ID AS op,
+             MIN(CASE WHEN ple.PLE_DATAENTREGA >= '2000-01-01'
+                      THEN DATE(ple.PLE_DATAENTREGA) END) AS data_prevista
+      FROM ordemservplanejentrega ple WHERE ple.EMP_ID=1 AND ple.ORS_ID IN (
+        SELECT os4.ORS_ID FROM ordemservico os4 ${planejSql}
+      )
+      GROUP BY ple.ORS_ID
+    ) planej ON planej.op=os.ORS_ID`;
 
   const countSql = `
     SELECT COUNT(*) AS total
     FROM ordemservico os
     JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
-    ${mainWhere.sql}`;
+    ${byPrevista ? planejJoin : ""}
+    ${mainSql}`;
+  const countParams = byPrevista
+    ? [...planejParams, ...mainParams]
+    : mainParams;
 
   const sql = `
     SELECT os.ORS_ID AS op,
@@ -363,25 +427,28 @@ export async function queryOpsByDescription(
            os.ORS_QUANTIDADE AS qtd_total,
            ROUND(os.ORS_VLRFINALPRAZO,2) AS valor_servico,
            DATE(os.ORS_DATA) AS data_emissao,
+           planej.data_prevista AS data_prevista,
            os.ORS_STATUSFATURAMENTO AS status,
            COALESCE(pcp.processos,0) AS pcp_processos,
            COALESCE(pcp.finalizados,0) AS pcp_finalizados
     FROM ordemservico os
     JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
+    ${planejJoin}
     LEFT JOIN (
       SELECT pc.CODIGOOP AS op, COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
       FROM pcpprocessos pc WHERE pc.EMP_ID=1 AND pc.CODIGOCOMPONENTE<>-1 AND pc.CODIGOOP IN (
-        SELECT os3.ORS_ID FROM ordemservico os3 ${pcpWhere.sql}
+        SELECT os3.ORS_ID FROM ordemservico os3 ${pcpSql}
       )
       GROUP BY pc.CODIGOOP
     ) pcp ON pcp.op=os.ORS_ID
-    ${mainWhere.sql}
-    ORDER BY os.ORS_DATA DESC
+    ${mainSql}
+    ${buildOpsOrderBy(input)}
     LIMIT ? OFFSET ?`;
 
   const params = [
-    ...pcpWhere.params,
-    ...mainWhere.params,
+    ...planejParams,
+    ...pcpParams,
+    ...mainParams,
     input.limite,
     offset,
   ];
@@ -392,7 +459,7 @@ export async function queryOpsByDescription(
   try {
     const [countRows] = await fastify.wingraphex.query<WingraphexCountDbRow[]>(
       countSql,
-      mainWhere.params,
+      countParams,
     );
     total = Number(countRows[0]?.total ?? 0);
 
