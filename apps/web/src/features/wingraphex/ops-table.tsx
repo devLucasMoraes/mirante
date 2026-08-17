@@ -27,6 +27,7 @@ import {
 import { cn } from "@repo/ui/lib/utils";
 
 import { getErrorMessage } from "@/lib/error-message";
+import { useIsTruncated } from "@/lib/use-is-truncated";
 
 import { OpsPagination } from "./ops-pagination";
 import { formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
@@ -223,6 +224,8 @@ function OpCard({
   onHistorico: (op: number) => void;
 }) {
   const [detalhesOpen, setDetalhesOpen] = useState(false);
+  const { ref: descricaoRef, isTruncated: descricaoTruncada } =
+    useIsTruncated<HTMLParagraphElement>();
   const entregueCompleto = op.entregue >= op.qtd_total && op.qtd_total > 0;
 
   return (
@@ -265,9 +268,12 @@ function OpCard({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-1.5 px-4">
-        <Tooltip>
+        <Tooltip open={descricaoTruncada ? undefined : false}>
           <TooltipTrigger asChild>
-            <p className="line-clamp-2 text-sm font-medium text-foreground">
+            <p
+              ref={descricaoRef}
+              className="line-clamp-2 text-sm font-medium text-foreground"
+            >
               {op.descricao || "—"}
             </p>
           </TooltipTrigger>
