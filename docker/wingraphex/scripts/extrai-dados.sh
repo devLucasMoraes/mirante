@@ -93,6 +93,10 @@ dump tipostatusordemservico
 dump pcptrabalhos          "EMP_ID=1 AND CODIGOOP IN (${OPS})"
 dump pcpprocessos          "EMP_ID=1 AND CODIGOOP IN (${OPS})"
 dump pcpapontamento        "EMP_ID=1 ORDER BY CODIGO,CODIGOPROCESSO,CODIGOTRABALHO LIMIT 200"
+# Catalogo PCP (centros de trabalho / maquinas fisicas / N:N equipamento x maquina)
+dump equipamento          "EMP_ID=1"
+dump maquina              "EMP_ID=1"
+dump equipamentomaquinas  "EMP_ID=1"
 
 # ============ FATURAMENTO ============
 dump documentocabecalho     "EMP_ID=1 AND CLASSIFICACAO=0 AND DOC_ID IN (${DOCS})"
