@@ -13,11 +13,31 @@ docker/wingraphex/
 ├── .env.example                 → modelo de variáveis (copiar para .env, nunca commitar .env)
 ├── initdb/
 │   ├── 01-schema.sql            → schema completo (557 tabelas), sem dados
-│   └── 02-dados.sql             → amostra REAL de dados (42 tabelas), gerada por extrai-dados.sh e incrementada por incrementa-ops.sh
+│   └── 02-dados.sql             → amostra REAL de dados (42 tabelas + catálogos PCP), gerada por extrai-dados.sh e incrementada por incrementa-ops.sh
 └── scripts/
     ├── extrai-dados.sh          → gera 02-dados.sql a partir da produção (somente leitura)
     └── incrementa-ops.sh        → ANEXA 30 OPs completas de 5 clientes a 02-dados.sql (somente leitura)
 ```
+
+## 2026-08-17 — Amostra regenerada com catálogos PCP (equipamento/maquina/equipamentomaquinas)
+- **O que foi testado:** regenerar `02-dados.sql` do zero com `scripts/extrai-dados.sh` (que passou a
+  incluir o catálogo PCP em 16/08) seguido de `scripts/incrementa-ops.sh` (+30 OPs), e recriar a réplica.
+- **Resultado:** funciona — réplica recriada com `down -v` + `up -d`, carga 100% sem erro de PK.
+- **Como reproduzir:**
+  ```bash
+  bash docker/wingraphex/scripts/extrai-dados.sh      # sobrescreve 02-dados.sql (base + catálogos)
+  ./docker/wingraphex/scripts/incrementa-ops.sh        # re-anexa as +30 OPs (dedup automático)
+  docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env down -v
+  docker compose -f docker-compose.wingraphex.yml --env-file docker/wingraphex/.env up -d
+  ```
+- **Observações:**
+  - **Catálogos PCP agora na amostra:** `equipamento` (30), `maquina` (38), `equipamentomaquinas` (33)
+    — dumping `EMP_ID=1` completo (tabelas pequenas). Útil para validar o nome canônico dos processos
+    (ver `modulo-pcp.md` §13).
+  - Contagens após regenerar: 35 `ordemservico`/`op`/`pcptrabalhos`, 143 `pcpprocessos`,
+    298 `pcpapontamento` — mesma base de antes, agora com os catálogos.
+  - O `extrai-dados.sh` **sobrescreve** o `02-dados.sql`; rodar o `incrementa-ops.sh` logo depois
+    para preservar as +30 OPs. O `down -v` é obrigatório para recarregar o volume com o arquivo novo.
 
 ## 2026-08-13 — Amostra incrementada: +30 OPs completas de 5 clientes
 - **O que foi testado:** anexar 30 OPs ponta-a-ponta novas (5 clientes x 6 OPs) ao `02-dados.sql`

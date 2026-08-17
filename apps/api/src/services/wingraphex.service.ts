@@ -382,15 +382,17 @@ export async function queryEquipamentos(
   const sql = `
     SELECT CODIGO, DESCRICAO
     FROM equipamento
-    WHERE EMP_ID=1 AND (DESATIVADO IS NULL OR DESATIVADO <> 'S')
+    WHERE EMP_ID=1 AND (DESATIVADO IS NULL OR DESATIVADO <> 'S') AND CODIGO > 0
     ORDER BY CODIGO`;
 
   try {
     const [rows] = await fastify.wingraphex.query<EquipamentoDbRow[]>(sql);
-    return rows.map((row) => ({
-      codigo: Number(row.CODIGO),
-      nome: row.DESCRICAO ?? "",
-    }));
+    return rows
+      .filter((row) => Number(row.CODIGO) > 0)
+      .map((row) => ({
+        codigo: Number(row.CODIGO),
+        nome: row.DESCRICAO ?? "",
+      }));
   } catch (err) {
     fastify.log.error({ err }, "Wingraphex equipamentos query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");

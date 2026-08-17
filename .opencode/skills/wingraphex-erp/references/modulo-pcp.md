@@ -132,6 +132,7 @@ WHERE a.EMP_ID=1 AND a.CODIGOTRABALHO=58329 GROUP BY a.CODIGOOPERADOR;"
   doméstica — validação usa a amostra de `02-dados.sql`): relação `pcpprocessos` →
   equipamento/máquina, conteúdo dos apontamentos e preenchimento de início/fim.
 - **Resultado:** validado na amostra (38 F / 105 P). Ver observações para os desvios encontrados.
+  → **Confirmado em produção em 17/08/2026 (ver §13).**
 
 ### 10.1 Equipamento é obrigatório; máquina é opcional
 - `CODIGOEQUIPAMENTO`/`DESCRICAOEQUIPAMENTO`: **preenchidos em 143/143** (100%). É o centro de
@@ -213,7 +214,7 @@ ORDER BY p.CODIGOTRABALHO, p.CODIGO, c.CODIGO;
 ```
 
 > Regra de ouro: `EMP_ID` no WHERE; apontamentos em segundos; datas do banco `1899-12-30` = não preenchido.
-> Catálogos `equipamento`/`maquina`/`equipamentomaquinas` foram adicionados a `docker/wingraphex/scripts/extrai-dados.sh` (16/08) — regenerar a amostra com acesso à produção para validar o nome canônico.
+> Catálogos `equipamento`/`maquina`/`equipamentomaquinas` foram adicionados a `docker/wingraphex/scripts/extrai-dados.sh` (16/08) — regenerar a amostra com acesso à produção para validar o nome canônico. → **Amostra regenerada com os catálogos em 17/08/2026; validação do nome canônico em produção no §13.**
 
 ## 11. 2026-08-16 — Cadeia OP → trabalho → processo → equipamento (mapeamento verificado)
 - **O que foi testado:** como a Ordem de Produção (`ordemservico`) chega aos equipamentos/processos.
@@ -311,4 +312,79 @@ SELECT CODIGOOP, TIPOCOMPONENTE, DESCRICAOCOMPONENTE, CODIGOCOMPONENTE,
 FROM pcpprocessos WHERE EMP_ID=1
 GROUP BY CODIGOOP, TIPOCOMPONENTE, DESCRICAOCOMPONENTE, CODIGOCOMPONENTE
 ORDER BY CODIGOOP;
+```
+
+## 13. 2026-08-17 — Validação em PRODUÇÃO (nome canônico, datas, pai/filho) — pendência da §10
+- **O que foi testado:** as descobertas da §10 (§10.1 nome canônico do equipamento, §10.3 início/fim,
+  §10.4 pai/filho) estavam validadas só na amostra local porque `192.168.1.16` era inacessível da rede
+  doméstica. Com acesso à produção, confirmadas as mesmas regras em **93.293 `pcpprocessos`** (o
+  levantamento inicial §10 dizia 93.017 — a base cresce).
+- **Resultado:** todas as regras da §10 confirmadas em produção. Catálogos já incluídos na amostra local.
+
+### 13.1 Nome canônico do equipamento (§10.1 confirmado)
+- **93.293/93.293** processos têm `CODIGOEQUIPAMENTO` presente e ligam em `equipamento` (0 órfãos).
+- **94,8%** (88.416) têm `DESCRICAOEQUIPAMENTO` **igual** ao canônico `equipamento.DESCRICAO`;
+  **5,2%** (4.877) **divergem** (snapshot antigo). Exemplos:
+  | `CODIGOEQUIPAMENTO` | snapshot (`DESCRICAOEQUIPAMENTO`) | canônico (`equipamento.DESCRICAO`) | qtd |
+  |---|---:|---|---:|
+  | 21 | SM 105 (MOISES) / SPEED 5 CORES(MOISES) | **SM 102** | 1.404+355+40 |
+  | 1 | SPEED 74 4 CORES(OSEAS) | **SM 74 (OSEAS)** | 813+83 |
+  | 2 | GTO(JORGINHO) / GTO | **SM 52 (LAZARO)** | 728+452+147 |
+  | 9 | DOBRA MECANIZADA | **DOBRA MECANIZADA 4 DOBRAS (VAL)** | 168+15 |
+  | 29 | COPIADORA | **GRAFICA RAPIDA** | 90 |
+  | 25 | ACABAMENTO MANUAL | **ENCADERNAÇÃO** | 86 |
+- **Confirma:** `DESCRICAOEQUIPAMENTO`/`DESCRICAOMAQUINA` são **snapshot** (cópia no momento do
+  processo); o nome **oficial** está em `equipamento.DESCRICAO`/`maquina` (ex.: `maquina.DESCRICAO` =
+  "SPEED MASTER 102 5 CORES - MOISES"). Vínculo confiável é **sempre pela chave** (`CODIGOEQUIPAMENTO`).
+- Catálogo em produção: **30 `equipamento`**, **38 `maquina`**, **33 `equipamentomaquinas`** (N:N);
+  **0 processos** com `CODIGOMAQUINA` órfão (todos ligam em `maquina.MAQ_ID`).
+
+### 13.2 Início/fim no processo (§10.3 confirmado em produção)
+| STATUS | qtd | sem DATAFIM | sem HORAFIM |
+|---|---:|---:|---:|
+| F | 84.398 | 1.027 | 1.027 |
+| P | 8.877 | 110 | 110 |
+| E | 16 | 0 | 0 |
+| S | 2 | 0 | 0 |
+- **1,2% dos `F`** (1.027) não têm `DATAFIM`/`HORAFIM` mesmo finalizados — predominam **CTP** (pré-
+  impressão) e **pais** de impressão (ex.: trab 62223 proc 11 SM 52 e proc 13 CTP), **com apontamentos**
+  (2–5 aponts). Confirmado em escala o caso que a §10.3 viu só na OP 62223 da amostra.
+- `pcpapontamento` segue com `DATAHORAINICIAL`/`DATAHORAFINAL` **sempre** preenchidos.
+
+### 13.3 Pai/filho (§10.4 confirmado em produção)
+- OP 62223 (produção): pais 11 (SM 52, dur 92=46+46), 12 (GUILHOTINA 80=40+40), 13 (CTP 16=15+1),
+  14 (ENTREGAS 2=1+1); filhos 1/6→pai 11, 2/7→pai 12, 4/8→pai 13, 5/9→pai 14; `EMBALAGEM`/`MONTAGEM`
+  (nível OP, sem pai). **Rollup `DURACAO` pai = Σ filhos** confirmado.
+- **Apontamentos espelhados** confirmados: filhos e pai têm os **mesmos** `DATAHORAINICIAL/FINAL`,
+  mesmo operador (ex.: procs 1/6/11 SM 52 = 3 aponts, 141 s cada; procs 4/8/13 CTP = 2 aponts, 47 s).
+- Contagem global em produção: 2.485 filhos (`CODIGOPROCESSOVINCULADO IS NOT NULL`), 1.116 pais
+  (`CODIGOCOMPONENTE=-1`), os demais (89.694) processos de nível OP com componente.
+- **Regra de ouro revalidada:** `CODIGOPROCESSOVINCULADO IS NOT NULL` ⇔ `CODIGOCOMPONENTE<>-1` —
+  contar produção **só filhos** ou **só pais**, nunca ambos; tempo real somando um dos grupos.
+
+### 13.4 Amostra local regenerada (17/08) com catálogos novos
+- `scripts/extrai-dados.sh` (agora inclui `equipamento`/`maquina`/`equipamentomaquinas`) +
+  `scripts/incrementa-ops.sh` (+30 OPs) → `02-dados.sql` regenerado; réplica recriada (`down -v` + `up`).
+- Réplica agora tem: **30 equipamento · 38 maquina · 33 equipamentomaquinas** (catálogo completo) +
+  35 OPs / 35 trabalhos / 143 processos / 298 apontamentos.
+
+### 13.5 Como reproduzir (somente leitura, produção 3307)
+```sql
+-- % de drift do nome vs canônico
+SELECT COUNT(*) total,
+       SUM(e.CODIGO IS NOT NULL AND p.DESCRICAOEQUIPAMENTO = e.DESCRICAO) confere,
+       SUM(e.CODIGO IS NOT NULL AND p.DESCRICAOEQUIPAMENTO <> e.DESCRICAO) diverge
+FROM pcpprocessos p LEFT JOIN equipamento e ON e.EMP_ID=p.EMP_ID AND e.CODIGO=p.CODIGOEQUIPAMENTO
+WHERE p.EMP_ID=1;
+-- F sem DATAFIM por status
+SELECT STATUS, COUNT(*) qtd, SUM(DATAFIM='1899-12-30' OR DATAFIM IS NULL) sem_datafim
+FROM pcpprocessos WHERE EMP_ID=1 GROUP BY STATUS;
+-- Pai x filhos + espelhamento de apontamentos (OP 62223)
+SELECT p.CODIGO pai, p.DESCRICAOEQUIPAMENTO, p.DURACAO dur_pai,
+       c.CODIGO filho, c.DESCRICAOCOMPONENTE, c.DURACAO dur_filho
+FROM pcpprocessos p
+LEFT JOIN pcpprocessos c ON c.EMP_ID=p.EMP_ID
+  AND c.CODIGOTRABALHOVINCULADO=p.CODIGOTRABALHO AND c.CODIGOPROCESSOVINCULADO=p.CODIGO
+WHERE p.EMP_ID=1 AND p.CODIGOTRABALHO=62223 AND p.CODIGOPROCESSOVINCULADO IS NULL
+ORDER BY p.CODIGO, c.CODIGO;
 ```

@@ -26,6 +26,7 @@ const equipamentoRows = [
   { CODIGO: "5", DESCRICAO: "SM 52" },
   { CODIGO: "21", DESCRICAO: "SM 102" },
   { CODIGO: "44", DESCRICAO: "GUILHOTINA 80" },
+  { CODIGO: "-2", DESCRICAO: "PRE-PRODUÇÃO" },
 ];
 
 function loginPayload(username: string, password: string) {
@@ -298,6 +299,7 @@ describe("rotas de PCP", () => {
       String(sql).includes("FROM equipamento"),
     )?.[0] as string;
     expect(sqlChamado).toContain("DESATIVADO");
+    expect(sqlChamado).toContain("CODIGO > 0");
   });
 
   test("vínculo excluiu equipamentos desabilitados do catálogo", async () => {
@@ -315,6 +317,7 @@ describe("rotas de PCP", () => {
       (equipamento: { codigo: number }) => equipamento.codigo,
     );
     expect(codigos).not.toContain(99);
+    expect(codigos).not.toContain(-2);
   });
 
   test("admin vincula e desvincula equipamento", async () => {
