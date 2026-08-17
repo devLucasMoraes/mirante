@@ -89,6 +89,18 @@ export const wingraphexOpSchema = z.object({
   pcp: z.object({
     processos: z.coerce.number(),
     finalizados: z.coerce.number(),
+    setores: z
+      .array(
+        z.object({
+          id: z.string(),
+          nome: z.string(),
+          ordem: z.number().int().nonnegative(),
+          processos: z.coerce.number(),
+          finalizados: z.coerce.number(),
+          finalizado: z.boolean(),
+        }),
+      )
+      .default([]),
   }),
 });
 

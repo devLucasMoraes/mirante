@@ -2,12 +2,18 @@ import type { MySQLRowDataPacket } from "@fastify/mysql";
 import type { FastifyInstance } from "fastify";
 
 import { AppError } from "../lib/errors.ts";
+import {
+  PcpEquipamentoSetorModel,
+  PcpSetorModel,
+} from "../models/index.ts";
 import type {
   NotaFaturamento,
   WingraphexCliente,
   WingraphexOp,
   WingraphexOpsResponse,
 } from "../schemas/wingraphex.schema.ts";
+
+const EMP_ID = 1;
 
 interface WingraphexOpDbRow extends MySQLRowDataPacket {
   op: string | number;
@@ -45,6 +51,22 @@ interface FinanceiroNotaDbRow extends MySQLRowDataPacket {
 interface EquipamentoDbRow extends MySQLRowDataPacket {
   CODIGO: string | number;
   DESCRICAO: string | null;
+}
+
+interface PcpProcessoSetorDbRow extends MySQLRowDataPacket {
+  op: string | number;
+  codigo: string | number;
+  processos: string | number;
+  finalizados: string | number;
+}
+
+interface PcpSetorProgresso {
+  id: string;
+  nome: string;
+  ordem: number;
+  processos: number;
+  finalizados: number;
+  finalizado: boolean;
 }
 
 export interface WingraphexEquipamento {
@@ -136,6 +158,7 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
     pcp: {
       processos: toNumber(row.pcp_processos),
       finalizados: toNumber(row.pcp_finalizados),
+      setores: [],
     },
   };
 }
@@ -224,6 +247,97 @@ function buildDocFinanceiro(
   return byDoc;
 }
 
+async function fetchPcpProcessosPorEquipamento(
+  fastify: FastifyInstance,
+  opIds: number[],
+): Promise<PcpProcessoSetorDbRow[]> {
+  const sql = `
+    SELECT pc.CODIGOOP AS op, pc.CODIGOEQUIPAMENTO AS codigo,
+           COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
+    FROM pcpprocessos pc
+    WHERE pc.EMP_ID=1 AND pc.CODIGOCOMPONENTE<>-1
+      AND pc.CODIGOOP IN (${placeholders(opIds.length)})
+    GROUP BY pc.CODIGOOP, pc.CODIGOEQUIPAMENTO`;
+  const [rows] = await fastify.wingraphex.query<PcpProcessoSetorDbRow[]>(
+    sql,
+    opIds.map(String),
+  );
+  return rows;
+}
+
+async function enriquecerPcpComSetores(
+  fastify: FastifyInstance,
+  itens: WingraphexOp[],
+): Promise<void> {
+  const opIds = itens.map((item) => item.op);
+  let rows: PcpProcessoSetorDbRow[];
+  try {
+    rows = await fetchPcpProcessosPorEquipamento(fastify, opIds);
+  } catch (err) {
+    fastify.log.error({ err }, "Pcp processos por equipamento query failed");
+    throw new AppError(503, "Banco Wingraphex indisponível.");
+  }
+  if (rows.length === 0) return;
+
+  const [setores, vinculos] = await Promise.all([
+    PcpSetorModel.find().sort({ ordem: 1 }).exec(),
+    PcpEquipamentoSetorModel.find({ empId: EMP_ID })
+      .select("codigoEquipamento setorId")
+      .exec(),
+  ]);
+
+  const setorPorEquipamento = new Map<number, string>(
+    vinculos.map((vinculo) => [
+      vinculo.codigoEquipamento,
+      String(vinculo.setorId),
+    ]),
+  );
+
+  const porOp = new Map<number, Map<number, { processos: number; finalizados: number }>>();
+  for (const row of rows) {
+    const opId = Number(row.op);
+    const codigo = Number(row.codigo);
+    const porCodigo = porOp.get(opId) ?? new Map();
+    porCodigo.set(codigo, {
+      processos: toNumber(row.processos),
+      finalizados: toNumber(row.finalizados),
+    });
+    porOp.set(opId, porCodigo);
+  }
+
+  for (const item of itens) {
+    const porCodigo = porOp.get(item.op);
+    if (!porCodigo) continue;
+
+    const setoresComProcessos: PcpSetorProgresso[] = [];
+    for (const setor of setores) {
+      let processos = 0;
+      let finalizados = 0;
+      for (const [codigo, agregado] of porCodigo) {
+        if (setorPorEquipamento.get(codigo) === setor.id) {
+          processos += agregado.processos;
+          finalizados += agregado.finalizados;
+        }
+      }
+      if (processos === 0) continue;
+      setoresComProcessos.push({
+        id: setor.id,
+        nome: setor.nome,
+        ordem: setor.ordem,
+        processos,
+        finalizados,
+        finalizado: finalizados === processos,
+      });
+    }
+
+    item.pcp = {
+      processos: item.pcp.processos,
+      finalizados: item.pcp.finalizados,
+      setores: setoresComProcessos,
+    };
+  }
+}
+
 export async function queryOpsByDescription(
   fastify: FastifyInstance,
   input: QueryOpsByDescriptionInput,
@@ -256,7 +370,7 @@ export async function queryOpsByDescription(
     JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
     LEFT JOIN (
       SELECT pc.CODIGOOP AS op, COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
-      FROM pcpprocessos pc WHERE pc.EMP_ID=1 AND pc.CODIGOOP IN (
+      FROM pcpprocessos pc WHERE pc.EMP_ID=1 AND pc.CODIGOCOMPONENTE<>-1 AND pc.CODIGOOP IN (
         SELECT os3.ORS_ID FROM ordemservico os3 ${pcpWhere.sql}
       )
       GROUP BY pc.CODIGOOP
@@ -272,18 +386,21 @@ export async function queryOpsByDescription(
     offset,
   ];
 
+  let itens: WingraphexOp[] = [];
+  let total = 0;
+
   try {
     const [countRows] = await fastify.wingraphex.query<WingraphexCountDbRow[]>(
       countSql,
       mainWhere.params,
     );
-    const total = Number(countRows[0]?.total ?? 0);
+    total = Number(countRows[0]?.total ?? 0);
 
     const [rows] = await fastify.wingraphex.query<WingraphexOpDbRow[]>(
       sql,
       params,
     );
-    const itens = rows.map(toWingraphexOp);
+    itens = rows.map(toWingraphexOp);
 
     if (itens.length > 0) {
       const opIds = itens.map((item) => item.op);
@@ -363,17 +480,21 @@ export async function queryOpsByDescription(
         }
       }
     }
-
-    return {
-      itens,
-      total,
-      pagina: input.pagina,
-      totalPaginas: total === 0 ? 0 : Math.ceil(total / input.limite),
-    };
   } catch (err) {
     fastify.log.error({ err }, "Wingraphex query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");
   }
+
+  if (itens.length > 0) {
+    await enriquecerPcpComSetores(fastify, itens);
+  }
+
+  return {
+    itens,
+    total,
+    pagina: input.pagina,
+    totalPaginas: total === 0 ? 0 : Math.ceil(total / input.limite),
+  };
 }
 
 export async function queryEquipamentos(

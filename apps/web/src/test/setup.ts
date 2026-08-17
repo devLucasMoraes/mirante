@@ -18,6 +18,14 @@ if (typeof window.matchMedia !== "function") {
   });
 }
 
+if (typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
 });

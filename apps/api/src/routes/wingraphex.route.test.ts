@@ -2,6 +2,10 @@ import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 
 import { createApp } from "../app.ts";
+import {
+  PcpEquipamentoSetorModel,
+  PcpSetorModel,
+} from "../models/index.ts";
 import { getTestMongoUri } from "../test/db.ts";
 import {
   createFakeClienteRow,
@@ -35,7 +39,7 @@ describe("rotas do wingraphex", () => {
       if (sql.includes("ORDER BY os.ORS_DATA")) {
         return [[opRow], []];
       }
-      if (sql.includes("COUNT(*)")) {
+      if (sql.includes("SELECT COUNT(*) AS total")) {
         return [[{ total: "1" }], []];
       }
       if (sql.includes("FROM pessoa p")) {
@@ -104,6 +108,86 @@ describe("rotas do wingraphex", () => {
         id: clienteRow.id,
         nome: clienteRow.nome,
         fantasia: clienteRow.fantasia,
+      },
+    ]);
+  });
+
+  test("consulta OPs traz steps de setores do PCP", async () => {
+    const setorImpressao = await PcpSetorModel.create({
+      nome: "Impressão",
+      ordem: 0,
+    });
+    const setorAcabamento = await PcpSetorModel.create({
+      nome: "Acabamento",
+      ordem: 1,
+    });
+    await PcpEquipamentoSetorModel.create({
+      empId: 1,
+      codigoEquipamento: 5,
+      setorId: setorImpressao._id,
+    });
+    await PcpEquipamentoSetorModel.create({
+      empId: 1,
+      codigoEquipamento: 21,
+      setorId: setorAcabamento._id,
+    });
+
+    const opComSetores: typeof opRow = {
+      ...createFakeOpRow(),
+      pcp_processos: "6",
+      pcp_finalizados: "3",
+    };
+
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes("ORDER BY os.ORS_DATA")) {
+        return [[opComSetores], []];
+      }
+      if (sql.includes("GROUP BY pc.CODIGOOP, pc.CODIGOEQUIPAMENTO")) {
+        return [
+          [
+            { op: opComSetores.op, codigo: "5", processos: 2, finalizados: 2 },
+            { op: opComSetores.op, codigo: "21", processos: 3, finalizados: 1 },
+            { op: opComSetores.op, codigo: "44", processos: 1, finalizados: 0 },
+          ],
+          [],
+        ];
+      }
+      if (sql.includes("SELECT COUNT(*) AS total")) {
+        return [[{ total: "1" }], []];
+      }
+      return [[], []];
+    });
+
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: { descricao: "cartao", pagina: "1", limite: "10" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.itens[0].pcp).toMatchObject({
+      processos: 6,
+      finalizados: 3,
+    });
+    expect(body.itens[0].pcp.setores).toEqual([
+      {
+        id: String(setorImpressao._id),
+        nome: "Impressão",
+        ordem: 0,
+        processos: 2,
+        finalizados: 2,
+        finalizado: true,
+      },
+      {
+        id: String(setorAcabamento._id),
+        nome: "Acabamento",
+        ordem: 1,
+        processos: 3,
+        finalizados: 1,
+        finalizado: false,
       },
     ]);
   });

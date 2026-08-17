@@ -67,6 +67,17 @@ export const notaFaturamentoSchema = z.object({
 
 export type NotaFaturamento = z.infer<typeof notaFaturamentoSchema>;
 
+export const pcpSetorProgressoSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+  ordem: z.number().int().nonnegative(),
+  processos: z.coerce.number(),
+  finalizados: z.coerce.number(),
+  finalizado: z.boolean(),
+});
+
+export type PcpSetorProgresso = z.infer<typeof pcpSetorProgressoSchema>;
+
 export const wingraphexOpSchema = z.object({
   op: z.number(),
   cliente: z.string().nullable(),
@@ -88,6 +99,7 @@ export const wingraphexOpSchema = z.object({
   pcp: z.object({
     processos: z.coerce.number(),
     finalizados: z.coerce.number(),
+    setores: z.array(pcpSetorProgressoSchema).default([]),
   }),
 });
 

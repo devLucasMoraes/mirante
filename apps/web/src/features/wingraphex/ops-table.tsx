@@ -30,6 +30,7 @@ import { getErrorMessage } from "@/lib/error-message";
 import { useIsTruncated } from "@/lib/use-is-truncated";
 
 import { OpsPagination } from "./ops-pagination";
+import { PcpSteps } from "./pcp-steps";
 import { formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
 import type { NotaFaturamento, WingraphexOp } from "./wingraphex.schemas";
 
@@ -320,7 +321,7 @@ function OpCard({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <CardFooter className="flex-col gap-4 px-4 pt-3">
+          <CardFooter className="flex-col gap-1 px-4 pt-3">
             <div className="grid w-full gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
           <div className="flex min-w-0 flex-col gap-2">
             <FooterGroupLabel>Serviço</FooterGroupLabel>
@@ -330,11 +331,6 @@ function OpCard({
                 value={formatCurrency(op.valor_servico)}
               />
               <Stat label="Quantidade" value={formatQuantity(op.qtd_total)} />
-              <Stat
-                label="PCP"
-                value={`${op.pcp.finalizados}/${op.pcp.processos}`}
-                hint="finalizados/total"
-              />
             </dl>
           </div>
 
@@ -376,6 +372,11 @@ function OpCard({
             </dl>
           </div>
 </div>
+
+            <div className="flex w-full flex-col gap-2">
+              <FooterGroupLabel>PCP</FooterGroupLabel>
+              <PcpSteps setores={op.pcp.setores} />
+            </div>
           </CardFooter>
         </CollapsibleContent>
       </Collapsible>
