@@ -233,7 +233,7 @@ function OpCard({
     <Card className="gap-3 py-4">
       <CardHeader className="flex items-start justify-between gap-4 px-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium tabular-nums">OP {op.op}</span>
             <Badge
               variant="outline"
