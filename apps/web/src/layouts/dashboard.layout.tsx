@@ -5,6 +5,7 @@ import {
   ClipboardList,
   LogOut,
   Menu,
+  Settings,
   UserRound,
   Users,
   Workflow,
@@ -91,7 +92,13 @@ function UserMenu() {
   );
 }
 
-function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
+function SidebarNav({
+  isAdmin,
+  canUpdateSettings,
+}: {
+  isAdmin: boolean;
+  canUpdateSettings: boolean;
+}) {
   const items = [
     {
       label: "Ordens de produção",
@@ -106,6 +113,15 @@ function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
     { label: "Perfil", href: "/dashboard/perfil", icon: UserRound },
     ...(isAdmin
       ? [{ label: "Usuários", href: "/dashboard/usuarios", icon: Users }]
+      : []),
+    ...(canUpdateSettings
+      ? [
+          {
+            label: "Configurações",
+            href: "/dashboard/configuracoes",
+            icon: Settings,
+          },
+        ]
       : []),
   ];
 
@@ -133,7 +149,21 @@ function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
+function SidebarCredit() {
+  return (
+    <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+      Mirante · desenvolvido por devLucasMoraes
+    </p>
+  );
+}
+
+function MobileMenu({
+  isAdmin,
+  canUpdateSettings,
+}: {
+  isAdmin: boolean;
+  canUpdateSettings: boolean;
+}) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -150,7 +180,8 @@ function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
         <div className="flex h-16 items-center border-b border-border px-6">
           <BrandLogo />
         </div>
-        <SidebarNav isAdmin={isAdmin} />
+        <SidebarNav isAdmin={isAdmin} canUpdateSettings={canUpdateSettings} />
+        <SidebarCredit />
       </SheetContent>
     </Sheet>
   );
@@ -159,6 +190,7 @@ function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
 export function DashboardLayout() {
   const ability = useAbility();
   const isAdmin = ability.can("manage", "User");
+  const canUpdateSettings = ability.can("update", "CompanySettings");
 
   return (
     <div className="flex min-h-svh">
@@ -166,13 +198,14 @@ export function DashboardLayout() {
         <div className="flex h-16 items-center border-b border-border px-6">
           <BrandLogo size="sm" />
         </div>
-        <SidebarNav isAdmin={isAdmin} />
+        <SidebarNav isAdmin={isAdmin} canUpdateSettings={canUpdateSettings} />
+        <SidebarCredit />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 border-b border-border px-4 md:px-6">
           <div className="flex items-center gap-2">
-            <MobileMenu isAdmin={isAdmin} />
+            <MobileMenu isAdmin={isAdmin} canUpdateSettings={canUpdateSettings} />
             <span className="text-sm font-medium text-muted-foreground md:hidden">
               Conta
             </span>

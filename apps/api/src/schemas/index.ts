@@ -1,5 +1,15 @@
 export { type Credentials,credentialsSchema } from "./auth.schema.ts";
 export {
+  companyLogoSchema,
+  companyNameSchema,
+  type CompanySettingsResponse,
+  companySettingsResponseSchema,
+  LOGO_MAX_BYTES,
+  LOGO_MAX_ENCODED_LENGTH,
+  type UpdateCompanySettingsPayload,
+  updateCompanySettingsSchema,
+} from "./company-settings.schema.ts";
+export {
   type CreateReciboPayload,
   createReciboSchema,
   type HistoricoEntrega,

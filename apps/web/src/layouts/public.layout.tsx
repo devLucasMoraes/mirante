@@ -3,16 +3,16 @@ import { Link, Outlet } from "react-router";
 import { Button } from "@repo/ui/components/button";
 
 import { BrandLogo } from "@/components/brand-logo";
+import { useCompanySettingsStore } from "@/features/company-settings/company-settings.store";
 import { ThemeToggle } from "@/features/theme/theme-toggle";
 
-const NAV_ITEMS = [
-  { label: "Recursos", href: "#recursos" },
-  { label: "Preços", href: "#precos" },
-  { label: "Depoimentos", href: "#depoimentos" },
-  { label: "FAQ", href: "#faq" },
-];
+const NAV_ITEMS = [{ label: "Recursos", href: "#recursos" }];
 
 export function PublicLayout() {
+  const companyName = useCompanySettingsStore(
+    (state) => state.branding.companyName,
+  );
+
   return (
     <div className="flex min-h-svh flex-col">
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm">
@@ -48,13 +48,17 @@ export function PublicLayout() {
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
           <BrandLogo size="sm" />
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Mirante. Todos os direitos reservados.
+            © {new Date().getFullYear()} {companyName}. Todos os direitos
+            reservados.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link to="/login" className="hover:text-foreground">
               Entrar
             </Link>
           </div>
+          <p className="text-sm text-muted-foreground">
+            Mirante · desenvolvido por devLucasMoraes
+          </p>
         </div>
       </footer>
     </div>

@@ -1,3 +1,4 @@
+export * from "./configuracoes.page";
 export * from "./dashboard.page";
 export * from "./home/home.page";
 export * from "./login.page";

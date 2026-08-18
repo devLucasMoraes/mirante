@@ -1,4 +1,12 @@
 export {
+  type CompanySettingsDoc,
+  type CompanySettingsDTO,
+  type CompanySettingsFields,
+  CompanySettingsModel,
+  DEFAULT_COMPANY_NAME,
+  toCompanySettingsDTO,
+} from "./company-settings.model.ts";
+export {
   type CounterDoc,
   CounterModel,
   nextSequenceValue,

@@ -12,7 +12,13 @@ import {
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 
+import { useCompanySettingsStore } from "@/features/company-settings/company-settings.store";
+
 function PreviewCard() {
+  const companyName = useCompanySettingsStore(
+    (state) => state.branding.companyName,
+  );
+
   return (
     <div className="relative mx-auto mt-20 max-w-4xl">
       <div
@@ -23,7 +29,7 @@ function PreviewCard() {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
-            <span className="text-sm font-semibold">Mirante</span>
+            <span className="text-sm font-semibold">{companyName}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
@@ -91,6 +97,10 @@ function PreviewCard() {
 }
 
 export function HomeHero() {
+  const companyName = useCompanySettingsStore(
+    (state) => state.branding.companyName,
+  );
+
   return (
     <section className="relative overflow-hidden">
       <div
@@ -109,7 +119,7 @@ export function HomeHero() {
           Enxergue seu negócio com uma nova visão
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-          O Mirante traz as consultas do banco legado para uma interface
+          {companyName} traz as consultas do banco legado para uma interface
           moderna: OPs, orçamentos, faturamento e financeiro em segundos —
           sem depender de relatórios manuais.
         </p>

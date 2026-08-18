@@ -12,7 +12,25 @@ export const testUser: User = {
 
 const reciboUsuario = { id: testUser.id, nome: testUser.name };
 
+const defaultSettings = {
+  id: "default",
+  nome: "Mirante",
+  logo: null,
+};
+
 export const handlers = [
+  http.get("*/api/settings", () => HttpResponse.json(defaultSettings)),
+  http.patch("*/api/settings", async ({ request }) => {
+    const body = (await request.json()) as Partial<{
+      nome: string;
+      logo: string | null;
+    }>;
+    return HttpResponse.json({
+      id: "default",
+      nome: body.nome ?? defaultSettings.nome,
+      logo: body.logo !== undefined ? body.logo : defaultSettings.logo,
+    });
+  }),
   http.post("*/api/auth/login", () => HttpResponse.json({ user: testUser })),
   http.post(
     "*/api/auth/logout",

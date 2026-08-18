@@ -15,6 +15,9 @@ export {
   userSchema,
 } from "./schemas.ts";
 export {
+  companySettingsSubject,
+} from "./subjects/company-settings.ts";
+export {
   pcpSetorSubject,
   pcpSetorSubjectSchema,
 } from "./subjects/pcp-setor.ts";

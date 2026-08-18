@@ -24,6 +24,7 @@ import {
 } from "./plugins/index.ts";
 import {
   authRoutes,
+  companySettingsRoutes,
   entregaRoutes,
   healthRoutes,
   pcpRoutes,
@@ -128,6 +129,7 @@ export async function createApp(
   await fastify.register(healthRoutes);
   await fastify.register(authRoutes, { prefix: "/api/auth" });
   await fastify.register(userRoutes, { prefix: "/api" });
+  await fastify.register(companySettingsRoutes, { prefix: "/api" });
   await fastify.register(entregaRoutes, { prefix: "/api/entregas" });
   await fastify.register(pcpRoutes, { prefix: "/api/pcp" });
   await fastify.register(wingraphexRoutes, { prefix: "/api/wingraphex" });

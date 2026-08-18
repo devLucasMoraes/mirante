@@ -1,5 +1,9 @@
 export { createAuthService } from "./auth.service.ts";
 export {
+  getCompanySettings,
+  updateCompanySettings,
+} from "./company-settings.service.ts";
+export {
   type AuthCookiesOptions,
   clearAuthCookies,
   COOKIE_NAMES,

@@ -1,6 +1,8 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+import { useCompanySettingsStore } from "@/features/company-settings/company-settings.store";
+
 import type { ReciboEntrega } from "./entrega.schemas";
 
 function formatDate(value: string): string {
@@ -83,8 +85,10 @@ export function criarPdfRecibo(recibo: ReciboEntrega): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
+  const companyName =
+    useCompanySettingsStore.getState().branding.companyName;
   doc.text(
-    "Mirante — controle de entregas",
+    `${companyName} — controle de entregas`,
     14,
     pageHeight - 10,
   );

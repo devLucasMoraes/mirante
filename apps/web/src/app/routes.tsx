@@ -6,6 +6,7 @@ import { PublicRoute } from "@/features/auth/public.route";
 import { AuthLayout } from "@/layouts/auth.layout";
 import { DashboardLayout } from "@/layouts/dashboard.layout";
 import { PublicLayout } from "@/layouts/public.layout";
+import { ConfiguracoesPage } from "@/pages/configuracoes.page";
 import { DashboardPage } from "@/pages/dashboard.page";
 import { HomePage } from "@/pages/home/home.page";
 import { LoginPage } from "@/pages/login.page";
@@ -37,6 +38,7 @@ export function AppRoutes() {
           <Route path="/dashboard/perfil" element={<ProfilePage />} />
           <Route element={<AdminRoute />}>
             <Route path="/dashboard/usuarios" element={<UsersPage />} />
+            <Route path="/dashboard/configuracoes" element={<ConfiguracoesPage />} />
           </Route>
         </Route>
       </Route>
