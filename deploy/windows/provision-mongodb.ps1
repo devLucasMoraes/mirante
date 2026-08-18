@@ -55,9 +55,23 @@ if (-not $mongodCfg) {
 }
 Write-Host "mongod.cfg: $($mongodCfg.FullName)"
 
+# mongosh: MongoDB >= 7 nao embute o mongosh no MSI. Procura em $MongoBin primeiro
+# e, se nao achar, cai para o PATH (ex.: mongosh instalado via npm ou binario manual).
 $mongosh = Get-ChildItem "$MongoBin\*\bin\mongosh.exe" -ErrorAction SilentlyContinue |
   Sort-Object FullName -Descending | Select-Object -First 1
-if (-not $mongosh) { throw "mongosh.exe nao encontrado em $MongoBin." }
+if (-not $mongosh) {
+  $mongosh = Get-Command mongosh -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+}
+if (-not $mongosh) {
+  throw "mongosh nao encontrado em $MongoBin nem no PATH. Instale o MongoDB Shell (https://www.mongodb.com/try/download/shell)."
+}
+$mongoshPath = if ($mongosh.PSObject.Properties.Name -contains "FullName" -and $mongosh.FullName) {
+  $mongosh.FullName
+} else {
+  $mongosh.Source
+}
+Write-Host "mongosh: $mongoshPath"
 
 # 3) Servico MongoDB rodando
 $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -89,7 +103,7 @@ try {
 "@
 
 Write-Host "Criando usuarios '$rootUser' (admin) e '$appUser' (db $AppDb)..."
-& $mongosh.FullName --quiet --eval $eval
+& $mongoshPath --quiet --eval $eval
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Falha ao criar usuarios. Se o MongoDB ja estava com auth ativada, crie os usuarios manualmente (root no admin, app com readWrite em $AppDb)."
   exit $LASTEXITCODE
@@ -109,8 +123,8 @@ Restart-Service -Name $ServiceName
 Write-Host "Servico '$ServiceName' reiniciado com auth ativada."
 
 # 7) Verificar conexao como usuario da aplicacao (authSource = db do app)
-$uri = "mongodb://$appUser:$appPass@127.0.0.1:27017/$AppDb?authSource=$AppDb"
-& $mongosh.FullName --quiet $uri --eval "db.runCommand({ ping: 1 }).ok"
+$uri = "mongodb://${appUser}:${appPass}@127.0.0.1:27017/${AppDb}?authSource=${AppDb}"
+& $mongoshPath --quiet $uri --eval "db.runCommand({ ping: 1 }).ok"
 if ($LASTEXITCODE -eq 0) {
   Write-Host "OK - MongoDB autenticado com o usuario da aplicacao."
 } else {

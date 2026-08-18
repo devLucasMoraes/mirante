@@ -77,9 +77,10 @@ Write-Host "==> nginx"
 if (-not (Test-Path $NginxExe)) {
   Write-Host "nginx nao encontrado em $NginxExe. Pule esta etapa ou ajuste -NginxExe."
 } else {
-  & $NginxExe -t
+  $nginxPrefix = [System.IO.Path]::GetDirectoryName([System.IO.Path]::GetDirectoryName($NginxExe))
+  & $NginxExe -t -p "$nginxPrefix"
   if ($LASTEXITCODE -ne 0) { throw "nginx -t falhou. Nao foi feito reload." }
-  & $NginxExe -s reload
+  & $NginxExe -s reload -p "$nginxPrefix"
 }
 
 Write-Host ""

@@ -39,6 +39,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Deploy logs (elevated runs)
+deploy/windows/logs/
+
 # Misc
 .DS_Store
 *.pem
