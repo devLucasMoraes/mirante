@@ -6,6 +6,7 @@ import {
   PcpEquipamentoSetorModel,
   PcpSetorModel,
 } from "../models/index.ts";
+import type { EmpresaPcp } from "../schemas/pcp.schema.ts";
 import type {
   EmpresaFilter,
   NotaFaturamento,
@@ -603,15 +604,19 @@ export async function queryOpsByDescription(
 
 export async function queryEquipamentos(
   fastify: FastifyInstance,
+  empresa: EmpresaPcp,
 ): Promise<WingraphexEquipamento[]> {
   const sql = `
     SELECT CODIGO, DESCRICAO
     FROM equipamento
-    WHERE EMP_ID=1 AND (DESATIVADO IS NULL OR DESATIVADO <> 'S') AND CODIGO > 0
+    WHERE EMP_ID = ? AND (DESATIVADO IS NULL OR DESATIVADO <> 'S') AND CODIGO > 0
     ORDER BY CODIGO`;
 
   try {
-    const [rows] = await fastify.wingraphex.query<EquipamentoDbRow[]>(sql);
+    const [rows] = await fastify.wingraphex.query<EquipamentoDbRow[]>(
+      sql,
+      [Number(empresa)],
+    );
     return rows
       .filter((row) => Number(row.CODIGO) > 0)
       .map((row) => ({

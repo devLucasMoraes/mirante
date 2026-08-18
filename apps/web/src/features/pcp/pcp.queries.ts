@@ -16,6 +16,7 @@ import {
 } from "@/api/pcp.api";
 
 import { pcpKeys } from "./pcp.query-keys";
+import type { EmpresaPcp } from "./pcp.schemas";
 
 export const setoresQueryOptions = queryOptions({
   queryKey: pcpKeys.setores(),
@@ -26,13 +27,14 @@ export function useSetoresQuery() {
   return useQuery(setoresQueryOptions);
 }
 
-export const equipamentosQueryOptions = queryOptions({
-  queryKey: pcpKeys.equipamentos(),
-  queryFn: listarEquipamentos,
-});
+export const equipamentosQueryOptions = (empresa: EmpresaPcp) =>
+  queryOptions({
+    queryKey: pcpKeys.equipamentos(empresa),
+    queryFn: () => listarEquipamentos(empresa),
+  });
 
-export function useEquipamentosQuery() {
-  return useQuery(equipamentosQueryOptions);
+export function useEquipamentosQuery(empresa: EmpresaPcp) {
+  return useQuery(equipamentosQueryOptions(empresa));
 }
 
 function refreshPcp(queryClient: ReturnType<typeof useQueryClient>) {
@@ -75,8 +77,15 @@ export function useExcluirSetorMutation() {
 export function useVincularEquipamentoMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ codigo, setorId }: { codigo: number; setorId: string | null }) =>
-      vincularEquipamento(codigo, setorId),
+    mutationFn: ({
+      empresa,
+      codigo,
+      setorId,
+    }: {
+      empresa: EmpresaPcp;
+      codigo: number;
+      setorId: string | null;
+    }) => vincularEquipamento(empresa, codigo, setorId),
     onSuccess: () => refreshPcp(queryClient),
   });
 }

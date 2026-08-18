@@ -6,6 +6,7 @@ import { authenticate } from "../hooks/authenticate.hook.ts";
 import { requireAbility } from "../lib/authorization.ts";
 import {
   criarSetorSchema,
+  empresaQuerySchema,
   equipamentoCodigoParamSchema,
   equipamentoComSetorSchema,
   objectIdParamSchema,
@@ -100,10 +101,12 @@ export async function pcpRoutes(fastify: FastifyInstance) {
     {
       preHandler: requireAbility("read", "PcpSetor"),
       schema: {
+        querystring: empresaQuerySchema,
         response: { 200: z.array(equipamentoComSetorSchema) },
       },
     },
-    async () => listarEquipamentosComSetor(fastify),
+    async (request) =>
+      listarEquipamentosComSetor(fastify, request.query.empresa),
   );
 
   fastify.withTypeProvider<ZodTypeProvider>().patch(
@@ -112,11 +115,16 @@ export async function pcpRoutes(fastify: FastifyInstance) {
       preHandler: requireAbility("update", "PcpSetor"),
       schema: {
         params: equipamentoCodigoParamSchema,
+        querystring: empresaQuerySchema,
         body: vincularSetorSchema,
       },
     },
     async (request, reply) => {
-      await vincularEquipamento(request.params.codigo, request.body.setorId);
+      await vincularEquipamento(
+        request.query.empresa,
+        request.params.codigo,
+        request.body.setorId,
+      );
       return reply.status(204).send();
     },
   );

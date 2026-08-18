@@ -22,10 +22,16 @@ let app: FastifyInstance;
 let query: ReturnType<typeof createFakeWingraphexPool>["query"];
 let remoteAddressIndex = 0;
 
-const equipamentoRows = [
+const equipamentoEmp1Rows = [
   { CODIGO: "5", DESCRICAO: "SM 52" },
   { CODIGO: "21", DESCRICAO: "SM 102" },
   { CODIGO: "44", DESCRICAO: "GUILHOTINA 80" },
+  { CODIGO: "-2", DESCRICAO: "PRE-PRODUÇÃO" },
+];
+
+const equipamentoEmp2Rows = [
+  { CODIGO: "3", DESCRICAO: "SPEED 74 (EDITORA)" },
+  { CODIGO: "14", DESCRICAO: "HP INDIGO (EDITORA)" },
   { CODIGO: "-2", DESCRICAO: "PRE-PRODUÇÃO" },
 ];
 
@@ -61,9 +67,10 @@ describe("rotas de PCP", () => {
 
   beforeEach(async () => {
     query.mockReset();
-    query.mockImplementation(async (sql: string) => {
+    query.mockImplementation(async (sql: string, params?: unknown[]) => {
       if (sql.includes("FROM equipamento")) {
-        return [equipamentoRows, []];
+        const empresa = Number(params?.[0] ?? 1);
+        return [empresa === 2 ? equipamentoEmp2Rows : equipamentoEmp1Rows, []];
       }
       return [[], []];
     });
@@ -300,6 +307,97 @@ describe("rotas de PCP", () => {
     )?.[0] as string;
     expect(sqlChamado).toContain("DESATIVADO");
     expect(sqlChamado).toContain("CODIGO > 0");
+    expect(sqlChamado).toContain("EMP_ID = ?");
+  });
+
+  test("lista equipamentos da empresa 2 via ?empresa=2", async () => {
+    const { user } = await createTestUser();
+    const cookie = await loginAs(user.username);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/pcp/equipamentos?empresa=2",
+      headers: { cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual([
+      { codigo: 3, nome: "SPEED 74 (EDITORA)", setorId: null },
+      { codigo: 14, nome: "HP INDIGO (EDITORA)", setorId: null },
+    ]);
+  });
+
+  test("vínculo de equipamento respeita a empresa", async () => {
+    const admin = await createTestUser({ role: "admin" });
+    const cookie = await loginAs(admin.user.username);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/pcp/setores",
+      headers: { cookie },
+      payload: { nome: "Impressão" },
+    });
+    const setorId = created.json().id as string;
+
+    await app.inject({
+      method: "PATCH",
+      url: "/api/pcp/equipamentos/5/setor",
+      headers: { cookie },
+      payload: { setorId },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/api/pcp/equipamentos/5/setor?empresa=2",
+      headers: { cookie },
+      payload: { setorId },
+    });
+
+    expect(
+      await PcpEquipamentoSetorModel.countDocuments({ empId: 1 }).exec(),
+    ).toBe(1);
+    expect(
+      await PcpEquipamentoSetorModel.countDocuments({ empId: 2 }).exec(),
+    ).toBe(1);
+
+    const emp1 = await app.inject({
+      method: "GET",
+      url: "/api/pcp/equipamentos",
+      headers: { cookie },
+    });
+    expect(emp1.json()).toEqual([
+      { codigo: 5, nome: "SM 52", setorId },
+      { codigo: 21, nome: "SM 102", setorId: null },
+      { codigo: 44, nome: "GUILHOTINA 80", setorId: null },
+    ]);
+
+    const emp2 = await app.inject({
+      method: "GET",
+      url: "/api/pcp/equipamentos?empresa=2",
+      headers: { cookie },
+    });
+    expect(emp2.json()).toEqual([
+      { codigo: 3, nome: "SPEED 74 (EDITORA)", setorId: null },
+      { codigo: 14, nome: "HP INDIGO (EDITORA)", setorId: null },
+    ]);
+  });
+
+  test("empresa fora do catálogo PCP retorna 400", async () => {
+    const { user } = await createTestUser();
+    const cookie = await loginAs(user.username);
+
+    const list = await app.inject({
+      method: "GET",
+      url: "/api/pcp/equipamentos?empresa=ambas",
+      headers: { cookie },
+    });
+    expect(list.statusCode).toBe(400);
+
+    const vincular = await app.inject({
+      method: "PATCH",
+      url: "/api/pcp/equipamentos/5/setor?empresa=ambas",
+      headers: { cookie },
+      payload: { setorId: null },
+    });
+    expect(vincular.statusCode).toBe(400);
   });
 
   test("vínculo excluiu equipamentos desabilitados do catálogo", async () => {

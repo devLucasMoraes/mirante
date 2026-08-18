@@ -41,8 +41,5 @@ const EMPRESA_NOME: Record<EmpresaFilter, string> = {
 };
 
 export function empresaNome(empresa: EmpresaFilter | number): string {
-  if (empresa === "ambas") return EMPRESA_NOME.ambas;
-  if (empresa === 1 || empresa === 2)
-    return EMPRESA_NOME[String(empresa) as Exclude<EmpresaFilter, "ambas">];
-  return `Emp ${empresa}`;
+  return EMPRESA_NOME[String(empresa) as EmpresaFilter] ?? "Empresa";
 }

@@ -14,6 +14,10 @@ export {
 export {
   type CriarSetorPayload,
   criarSetorSchema,
+  type EmpresaPcp,
+  empresaPcpSchema,
+  type EmpresaQuery,
+  empresaQuerySchema,
   equipamentoCodigoParamSchema,
   type EquipamentoComSetor,
   equipamentoComSetorSchema,

@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+export const empresaPcpSchema = z.enum(["1", "2"]);
+export type EmpresaPcp = z.infer<typeof empresaPcpSchema>;
+
+export const listarEquipamentosParamsSchema = z.object({
+  empresa: empresaPcpSchema,
+});
+
+export type ListarEquipamentosParams = z.infer<
+  typeof listarEquipamentosParamsSchema
+>;
+
+export const vincularEquipamentoParamsSchema = z.object({
+  empresa: empresaPcpSchema,
+});
+
+export type VincularEquipamentoParams = z.infer<
+  typeof vincularEquipamentoParamsSchema
+>;
+
 export const pcpSetorSchema = z.object({
   id: z.string(),
   nome: z.string(),

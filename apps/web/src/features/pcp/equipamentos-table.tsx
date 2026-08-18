@@ -28,7 +28,7 @@ import {
   useSetoresQuery,
   useVincularEquipamentoMutation,
 } from "./pcp.queries";
-import type { EquipamentoComSetor } from "./pcp.schemas";
+import type { EmpresaPcp, EquipamentoComSetor } from "./pcp.schemas";
 
 const SEM_SETOR_VALUE = "__sem_setor__";
 
@@ -90,11 +90,11 @@ function EquipamentoRow({
   );
 }
 
-export function EquipamentosTable() {
+export function EquipamentosTable({ empresa }: { empresa: EmpresaPcp }) {
   const ability = useAbility();
   const canManage = ability.can("manage", "PcpSetor");
   const { data: equipamentos, isPending, isError, error } =
-    useEquipamentosQuery();
+    useEquipamentosQuery(empresa);
   const { data: setores } = useSetoresQuery();
   const vincularMutation = useVincularEquipamentoMutation();
   const [pendentes, setPendentes] = useState<ReadonlySet<number>>(new Set());
@@ -125,7 +125,7 @@ export function EquipamentosTable() {
   const vincular = (codigo: number, setorId: string | null) => {
     setPendentes((atual) => new Set(atual).add(codigo));
     vincularMutation.mutate(
-      { codigo, setorId },
+      { empresa, codigo, setorId },
       {
         onSettled: () => {
           setPendentes((atual) => {

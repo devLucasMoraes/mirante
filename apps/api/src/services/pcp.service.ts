@@ -8,10 +8,15 @@ import {
   PcpSetorModel,
   toPcpSetorDTO,
 } from "../models/index.ts";
-import type { EquipamentoComSetor } from "../schemas/index.ts";
+import type {
+  EmpresaPcp,
+  EquipamentoComSetor,
+} from "../schemas/index.ts";
 import { queryEquipamentos } from "./wingraphex.service.ts";
 
-const EMP_ID = 1;
+function empresaParam(empresa: EmpresaPcp): number {
+  return empresa === "1" ? 1 : 2;
+}
 
 function assertSetorObjectId(id: string): Types.ObjectId {
   if (!Types.ObjectId.isValid(id)) {
@@ -98,10 +103,12 @@ export async function reordenarSetores(ids: string[]): Promise<void> {
 }
 
 export async function vincularEquipamento(
+  empresa: EmpresaPcp,
   codigo: number,
   setorId: string | null,
 ): Promise<void> {
-  const filter = { empId: EMP_ID, codigoEquipamento: codigo };
+  const empId = empresaParam(empresa);
+  const filter = { empId, codigoEquipamento: codigo };
 
   if (setorId === null) {
     await PcpEquipamentoSetorModel.deleteOne(filter).exec();
@@ -130,12 +137,13 @@ export async function vincularEquipamento(
 
 export async function listarEquipamentosComSetor(
   fastify: FastifyInstance,
+  empresa: EmpresaPcp,
 ): Promise<EquipamentoComSetor[]> {
-  const equipamentos = await queryEquipamentos(fastify);
+  const equipamentos = await queryEquipamentos(fastify, empresa);
   if (equipamentos.length === 0) return [];
 
   const vinculos = await PcpEquipamentoSetorModel.find({
-    empId: EMP_ID,
+    empId: empresaParam(empresa),
     codigoEquipamento: {
       $in: equipamentos.map((equipamento) => equipamento.codigo),
     },

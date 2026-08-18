@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const empresaPcpSchema = z.enum(["1", "2"]);
+export type EmpresaPcp = z.infer<typeof empresaPcpSchema>;
+
+export const empresaQuerySchema = z.object({
+  empresa: empresaPcpSchema.default("1"),
+});
+
+export type EmpresaQuery = z.infer<typeof empresaQuerySchema>;
+
 export const objectIdParamSchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i, "Identificador inválido."),
 });
