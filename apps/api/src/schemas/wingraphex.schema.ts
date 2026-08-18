@@ -4,9 +4,13 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD");
 
+export const empresaSchema = z.enum(["ambas", "1", "2"]);
+export type EmpresaFilter = z.infer<typeof empresaSchema>;
+
 export const queryOpsQuerySchema = z
   .object({
     descricao: z.string().trim().optional(),
+    empresa: empresaSchema.default("ambas"),
     clienteId: z.coerce.number().int().positive().optional(),
     dataInicio: dateStringSchema.optional(),
     dataFim: dateStringSchema.optional(),
@@ -47,6 +51,7 @@ export type QueryOpsQuery = z.infer<typeof queryOpsQuerySchema>;
 
 export const queryClientesQuerySchema = z.object({
   term: z.string().trim().optional(),
+  empresa: empresaSchema.default("ambas"),
   limite: z.coerce.number().int().min(1).max(200).default(50),
 });
 
@@ -72,6 +77,7 @@ export type NotaFaturamento = z.infer<typeof notaFaturamentoSchema>;
 
 export const wingraphexOpSchema = z.object({
   op: z.number(),
+  empId: z.number().int().min(1).max(2),
   cliente: z.string().nullable(),
   descricao: z.string(),
   qtd_total: z.coerce.number(),

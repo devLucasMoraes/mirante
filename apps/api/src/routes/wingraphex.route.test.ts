@@ -87,6 +87,7 @@ describe("rotas do wingraphex", () => {
     expect(body.itens).toHaveLength(1);
     expect(body.itens[0]).toMatchObject({
       op: Number(opRow.op),
+      empId: Number(opRow.emp_id),
       descricao: opRow.descricao,
       qtd_total: Number(opRow.qtd_total),
       valor_servico: Number(opRow.valor_servico),
@@ -209,6 +210,89 @@ describe("rotas do wingraphex", () => {
     ]);
   });
 
+  test("filtra OPs por empresa 2", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: { descricao: "cartao", empresa: "2", pagina: "1", limite: "10" },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const calls = query.mock.calls;
+    const mainSql = calls
+      .map((call) => String(call[0]))
+      .find((sql) => sql.includes("ORDER BY os.ORS_DATA"));
+    expect(mainSql).toContain("os.EMP_ID = ?");
+
+    const countCall = calls.find((call) =>
+      String(call[0]).includes("SELECT COUNT(*) AS total"),
+    );
+    expect(countCall?.[1]?.[0]).toBe(2);
+  });
+
+  test("filtra OPs por empresa 1 aplica EMP_ID=1", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: { descricao: "cartao", empresa: "1", pagina: "1", limite: "10" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const mainSql = query.mock.calls
+      .map((call) => String(call[0]))
+      .find((sql) => sql.includes("ORDER BY os.ORS_DATA"));
+    expect(mainSql).toContain("os.EMP_ID = ?");
+  });
+
+  test("empresa ambas não aplica filtro de empresa", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: { descricao: "cartao", empresa: "ambas", pagina: "1", limite: "10" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const mainSql = query.mock.calls
+      .map((call) => String(call[0]))
+      .find((sql) => sql.includes("ORDER BY os.ORS_DATA"));
+    expect(mainSql).not.toContain("os.EMP_ID = ?");
+  });
+
+  test("rejeita empresa inválida na consulta de OPs", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/ops",
+      headers: { cookie },
+      query: { descricao: "cartao", empresa: "3", pagina: "1", limite: "10" },
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("clientes respeita o filtro de empresa", async () => {
+    const cookie = await loginAs();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/wingraphex/clientes",
+      headers: { cookie },
+      query: { term: "cliente", empresa: "1", limite: "5" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const clientesSql = query.mock.calls
+      .map((call) => String(call[0]))
+      .find((sql) => sql.includes("FROM pessoa p"));
+    expect(clientesSql).toContain("p.EMP_ID = ?");
+  });
+
   test("consulta OPs traz steps de setores do PCP", async () => {
     const setorImpressao = await PcpSetorModel.create({
       nome: "Impressão",
@@ -239,12 +323,12 @@ describe("rotas do wingraphex", () => {
       if (sql.includes("ORDER BY os.ORS_DATA")) {
         return [[opComSetores], []];
       }
-      if (sql.includes("GROUP BY pc.CODIGOOP, pc.CODIGOEQUIPAMENTO")) {
+      if (sql.includes("GROUP BY pc.CODIGOOP, pc.EMP_ID, pc.CODIGOEQUIPAMENTO")) {
         return [
           [
-            { op: opComSetores.op, codigo: "5", processos: 2, finalizados: 2 },
-            { op: opComSetores.op, codigo: "21", processos: 3, finalizados: 1 },
-            { op: opComSetores.op, codigo: "44", processos: 1, finalizados: 0 },
+            { emp_id: "1", op: opComSetores.op, codigo: "5", processos: 2, finalizados: 2 },
+            { emp_id: "1", op: opComSetores.op, codigo: "21", processos: 3, finalizados: 1 },
+            { emp_id: "1", op: opComSetores.op, codigo: "44", processos: 1, finalizados: 0 },
           ],
           [],
         ];

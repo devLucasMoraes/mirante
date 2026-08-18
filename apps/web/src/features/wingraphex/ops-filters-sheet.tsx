@@ -22,11 +22,14 @@ import {
 } from "@repo/ui/components/sheet";
 
 import { ClienteCombobox } from "./cliente-combobox";
+import { empresaNome } from "./wingraphex.format";
+import type { EmpresaFilter } from "./wingraphex.schemas";
 
 export type OrdenacaoOps = "emissao" | "prevista";
 export type DirecaoOps = "asc" | "desc";
 
 export type OpFilters = {
+  empresa: EmpresaFilter;
   clienteId?: number;
   clienteNome?: string;
   clienteFantasia?: string;
@@ -37,6 +40,7 @@ export type OpFilters = {
 };
 
 export const EMPTY_FILTERS: OpFilters = {
+  empresa: "ambas",
   dataInicio: "",
   dataFim: "",
   ordenarPor: "emissao",
@@ -92,8 +96,8 @@ export function OpsFiltersSheet({
         <SheetHeader>
           <SheetTitle>Filtros</SheetTitle>
           <SheetDescription>
-            Refine a busca por cliente, período e ordenação. O período segue a
-            ordenação escolhida (emissão ou data prevista).
+            Refine a busca por empresa, cliente, período e ordenação. O período
+            segue a ordenação escolhida (emissão ou data prevista).
           </SheetDescription>
         </SheetHeader>
 
@@ -113,6 +117,28 @@ export function OpsFiltersSheet({
           className="space-y-4 px-4"
         >
           <div className="space-y-2">
+            <Label>Empresa</Label>
+            <Select
+              value={draft.empresa}
+              onValueChange={(value) =>
+                setDraft((current) => ({
+                  ...current,
+                  empresa: value as EmpresaFilter,
+                }))
+              }
+            >
+              <SelectTrigger id="ops-empresa" className="w-full">
+                <SelectValue placeholder="Empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ambas">{empresaNome("ambas")}</SelectItem>
+                <SelectItem value="1">{empresaNome("1")}</SelectItem>
+                <SelectItem value="2">{empresaNome("2")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="cliente-combobox">Cliente</Label>
             <div id="cliente-combobox">
               <ClienteCombobox
@@ -125,6 +151,7 @@ export function OpsFiltersSheet({
                       }
                     : null
                 }
+                empresa={draft.empresa}
                 onSelect={(cliente) =>
                   setDraft((current) => ({
                     ...current,

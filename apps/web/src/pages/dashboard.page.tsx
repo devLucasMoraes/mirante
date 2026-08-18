@@ -22,6 +22,7 @@ import type { OpFilters } from "@/features/wingraphex/ops-filters-sheet";
 import { OpsFiltersSheet } from "@/features/wingraphex/ops-filters-sheet";
 import { useOpsSelectionStore } from "@/features/wingraphex/ops-selection.store";
 import { OpsTable } from "@/features/wingraphex/ops-table";
+import { empresaNome } from "@/features/wingraphex/wingraphex.format";
 import { useOpsQuery } from "@/features/wingraphex/wingraphex.queries";
 import type { QueryOpsParams } from "@/features/wingraphex/wingraphex.schemas";
 
@@ -35,6 +36,7 @@ export function DashboardPage() {
   const clearSearch = useOpsFiltersStore((state) => state.clearSearch);
   const applyStoredFilters = useOpsFiltersStore((state) => state.applyFilters);
   const removeClienteFilter = useOpsFiltersStore((state) => state.removeCliente);
+  const removeEmpresaFilter = useOpsFiltersStore((state) => state.removeEmpresa);
   const removeDataFilter = useOpsFiltersStore((state) => state.removeData);
   const setPagina = useOpsFiltersStore((state) => state.setPagina);
   const selecionadas = useOpsSelectionStore((state) => state.selecionadas);
@@ -51,10 +53,13 @@ export function DashboardPage() {
     filters.clienteId !== undefined ||
     hasDateFilter;
   const activeFilterCount =
-    (filters.clienteId !== undefined ? 1 : 0) + (hasDateFilter ? 1 : 0);
+    (filters.clienteId !== undefined ? 1 : 0) +
+    (filters.empresa !== "ambas" ? 1 : 0) +
+    (hasDateFilter ? 1 : 0);
 
   const params: QueryOpsParams = {
     descricao: descricao.trim() || undefined,
+    empresa: filters.empresa,
     clienteId: filters.clienteId,
     dataInicio: filters.dataInicio || undefined,
     dataFim: filters.dataFim || undefined,
@@ -116,9 +121,16 @@ export function DashboardPage() {
     removeClienteFilter();
   };
 
+  const removeEmpresa = () => {
+    removeEmpresaFilter();
+  };
+
   const removeData = () => {
     removeDataFilter();
   };
+
+  const empresaLabel =
+    filters.empresa === "ambas" ? null : empresaNome(filters.empresa);
 
   const dateLabel =
     filters.dataInicio && filters.dataFim
@@ -135,7 +147,8 @@ export function DashboardPage() {
             Ordens de produção
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Consulte as OPs pela descrição e refine por cliente e período.
+            Consulte as OPs pela descrição e refine por empresa, cliente e
+            período.
           </p>
         </div>
       </div>
@@ -210,6 +223,19 @@ export function DashboardPage() {
                 type="button"
                 aria-label="Remover filtro de cliente"
                 onClick={removeCliente}
+                className="flex items-center rounded-sm p-0.5 transition-opacity hover:opacity-70"
+              >
+                <X className="size-3" />
+              </button>
+            </Badge>
+          ) : null}
+          {empresaLabel !== null ? (
+            <Badge variant="secondary" className="gap-1 py-1 pr-1 pl-2">
+              Empresa: {empresaLabel}
+              <button
+                type="button"
+                aria-label="Remover filtro de empresa"
+                onClick={removeEmpresa}
                 className="flex items-center rounded-sm p-0.5 transition-opacity hover:opacity-70"
               >
                 <X className="size-3" />

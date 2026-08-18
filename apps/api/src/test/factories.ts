@@ -30,6 +30,7 @@ export async function createTestUser(params: CreateTestUserParams = {}) {
 
 export interface FakeOpRow {
   op: string;
+  emp_id: string;
   cliente: string;
   descricao: string;
   qtd_total: string;
@@ -44,6 +45,7 @@ export interface FakeOpRow {
 export function createFakeOpRow(): FakeOpRow {
   return {
     op: faker.number.int({ min: 1, max: 9_999 }).toString(),
+    emp_id: "1",
     cliente: faker.company.name(),
     descricao: faker.commerce.productName(),
     qtd_total: faker.number.int({ min: 100, max: 100_000 }).toString(),

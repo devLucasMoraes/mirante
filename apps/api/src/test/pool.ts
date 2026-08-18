@@ -7,4 +7,7 @@ export function createFakeWingraphexPool() {
   return { pool, query };
 }
 
-type WingraphexQuery = (sql: string) => Promise<unknown[][]>;
+type WingraphexQuery = (
+  sql: string,
+  params?: unknown[],
+) => Promise<unknown[][]>;

@@ -26,6 +26,7 @@ function hasOpsCriteria(params: QueryOpsParams): boolean {
 export function opsQueryOptions(params: QueryOpsParams) {
   const normalized: QueryOpsParams = {
     ...params,
+    empresa: params.empresa ?? "ambas",
     ordenarPor: params.ordenarPor ?? "emissao",
     direcao: params.direcao ?? "desc",
     pagina: params.pagina ?? 1,
@@ -44,9 +45,10 @@ export function useOpsQuery(params: QueryOpsParams) {
 
 export function clientesQueryOptions(params: QueryClientesParams) {
   const term = params.term?.trim() ?? "";
+  const empresa = params.empresa ?? "ambas";
   return queryOptions({
-    queryKey: wingraphexKeys.clientes(term),
-    queryFn: () => queryClientes({ term }),
+    queryKey: wingraphexKeys.clientes({ term, empresa }),
+    queryFn: () => queryClientes({ term, empresa }),
     enabled: term.length >= 2,
     staleTime: 60_000,
     placeholderData: keepPreviousData,

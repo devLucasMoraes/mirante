@@ -31,7 +31,7 @@ import { useIsTruncated } from "@/lib/use-is-truncated";
 
 import { OpsPagination } from "./ops-pagination";
 import { PcpSteps } from "./pcp-steps";
-import { formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
+import { empresaNome, formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
 import type { NotaFaturamento, WingraphexOp } from "./wingraphex.schemas";
 
 const SKELETON_CARDS = 6;
@@ -235,6 +235,12 @@ function OpCard({
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="font-medium tabular-nums">OP {op.op}</span>
+            <Badge
+              variant="outline"
+              className="border-muted-foreground/30 bg-muted-foreground/10 px-1.5 text-[10px] font-medium text-muted-foreground"
+            >
+              {empresaNome(op.empId)}
+            </Badge>
             <StatusBadge op={op} />
           </div>
           <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
@@ -500,7 +506,7 @@ export function OpsTable({
               <div className="grid grid-cols-1 gap-4">
                 {itens?.map((op) => (
                   <OpCard
-                    key={op.op}
+                    key={`${op.empId}:${op.op}`}
                     op={op}
                     isSelected={selectedOps.has(op.op)}
                     onToggleSelect={onToggleSelect}

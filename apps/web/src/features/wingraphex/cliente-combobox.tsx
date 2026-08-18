@@ -19,16 +19,18 @@ import {
 import { cn } from "@repo/ui/lib/utils";
 
 import { useClientesQuery } from "./wingraphex.queries";
-import type { WingraphexCliente } from "./wingraphex.schemas";
+import type { EmpresaFilter, WingraphexCliente } from "./wingraphex.schemas";
 
 const MIN_TERM_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
 export function ClienteCombobox({
   value,
+  empresa,
   onSelect,
 }: {
   value: WingraphexCliente | null;
+  empresa: EmpresaFilter;
   onSelect: (cliente: WingraphexCliente | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -45,7 +47,10 @@ export function ClienteCombobox({
     return () => clearTimeout(timer);
   }, [open, term]);
 
-  const clientesQuery = useClientesQuery({ term: debouncedTerm });
+  const clientesQuery = useClientesQuery({
+    term: debouncedTerm,
+    empresa,
+  });
   const loading = clientesQuery.isPending || clientesQuery.isFetching;
   const shouldSearch = debouncedTerm.length >= MIN_TERM_LENGTH;
 

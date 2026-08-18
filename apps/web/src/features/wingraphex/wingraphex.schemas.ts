@@ -4,9 +4,13 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD");
 
+export const empresaSchema = z.enum(["ambas", "1", "2"]);
+export type EmpresaFilter = z.infer<typeof empresaSchema>;
+
 export const queryOpsParamsSchema = z
   .object({
     descricao: z.string().trim().optional(),
+    empresa: empresaSchema.optional(),
     clienteId: z.number().int().positive().optional(),
     dataInicio: dateStringSchema.optional(),
     dataFim: dateStringSchema.optional(),
@@ -47,6 +51,7 @@ export type QueryOpsParams = z.infer<typeof queryOpsParamsSchema>;
 
 export const queryClientesParamsSchema = z.object({
   term: z.string().trim().optional(),
+  empresa: empresaSchema.optional(),
 });
 
 export type QueryClientesParams = z.infer<typeof queryClientesParamsSchema>;
@@ -82,6 +87,7 @@ export type PcpSetorProgresso = z.infer<typeof pcpSetorProgressoSchema>;
 
 export const wingraphexOpSchema = z.object({
   op: z.number(),
+  empId: z.coerce.number().int().min(1).max(2),
   cliente: z.string().nullable(),
   descricao: z.string(),
   qtd_total: z.coerce.number(),

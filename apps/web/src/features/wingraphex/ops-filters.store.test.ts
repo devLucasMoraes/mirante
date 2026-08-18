@@ -10,7 +10,13 @@ beforeEach(() => {
   useOpsFiltersStore.setState({
     searchInput: "",
     descricao: "",
-    filters: { dataInicio: "", dataFim: "", ordenarPor: "emissao", direcao: "desc" },
+    filters: {
+      empresa: "ambas",
+      dataInicio: "",
+      dataFim: "",
+      ordenarPor: "emissao",
+      direcao: "desc",
+    },
     pagina: 1,
   });
 });
@@ -22,6 +28,7 @@ function persistedState() {
     searchInput: string;
     descricao: string;
     filters: {
+      empresa: "ambas" | "1" | "2";
       clienteId?: number;
       clienteNome?: string;
       dataInicio: string;
@@ -39,6 +46,7 @@ describe("ops-filters.store", () => {
     expect(state.searchInput).toBe("");
     expect(state.descricao).toBe("");
     expect(state.filters).toEqual({
+      empresa: "ambas",
       dataInicio: "",
       dataFim: "",
       ordenarPor: "emissao",
@@ -84,6 +92,7 @@ describe("ops-filters.store", () => {
     useOpsFiltersStore
       .getState()
       .applyFilters({
+        empresa: "ambas",
         clienteId: 7,
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",
@@ -110,7 +119,7 @@ describe("ops-filters.store", () => {
   test("setPagina persiste e applySearch mantém o filtro", () => {
     useOpsFiltersStore
       .getState()
-      .applyFilters({ dataInicio: "2026-01-01", dataFim: "2026-01-31", ordenarPor: "emissao", direcao: "desc" });
+      .applyFilters({ dataInicio: "2026-01-01", dataFim: "2026-01-31", empresa: "ambas", ordenarPor: "emissao", direcao: "desc" });
     useOpsFiltersStore.getState().setPagina(2);
 
     useOpsFiltersStore.getState().applySearch("caixa");
@@ -125,6 +134,7 @@ describe("ops-filters.store", () => {
     useOpsFiltersStore
       .getState()
       .applyFilters({
+        empresa: "ambas",
         clienteId: 7,
         clienteNome: "Gráfica Bella",
         clienteFantasia: "Bella",
@@ -144,10 +154,32 @@ describe("ops-filters.store", () => {
     expect(state.filters.dataFim).toBe("2026-03-31");
   });
 
+  test("removeEmpresa volta para ambas mantendo os demais filtros", () => {
+    useOpsFiltersStore
+      .getState()
+      .applyFilters({
+        empresa: "2",
+        clienteId: 7,
+        clienteNome: "Editora Esquivel",
+        dataInicio: "2026-01-01",
+        dataFim: "",
+        ordenarPor: "emissao",
+        direcao: "desc",
+      });
+
+    useOpsFiltersStore.getState().removeEmpresa();
+
+    const state = useOpsFiltersStore.getState();
+    expect(state.filters.empresa).toBe("ambas");
+    expect(state.filters.clienteId).toBe(7);
+    expect(state.filters.dataInicio).toBe("2026-01-01");
+  });
+
   test("removeData limpa o período mantendo o cliente", () => {
     useOpsFiltersStore
       .getState()
       .applyFilters({
+        empresa: "ambas",
         clienteId: 7,
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",
@@ -169,6 +201,7 @@ describe("ops-filters.store", () => {
     useOpsFiltersStore
       .getState()
       .applyFilters({
+        empresa: "ambas",
         clienteId: 7,
         clienteNome: "Gráfica Bella",
         dataInicio: "2026-01-01",

@@ -18,6 +18,7 @@ type OpsFiltersState = {
   clearSearch: () => void;
   applyFilters: (filters: OpFilters) => void;
   removeCliente: () => void;
+  removeEmpresa: () => void;
   removeData: () => void;
   clearFilters: () => void;
   setPagina: (page: number) => void;
@@ -47,6 +48,12 @@ export const useOpsFiltersStore = create<OpsFiltersState>()(
             clienteNome: undefined,
             clienteFantasia: undefined,
           },
+          pagina: 1,
+        })),
+
+      removeEmpresa: () =>
+        set((state) => ({
+          filters: { ...state.filters, empresa: "ambas" },
           pagina: 1,
         })),
 

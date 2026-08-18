@@ -7,16 +7,26 @@ import {
   PcpSetorModel,
 } from "../models/index.ts";
 import type {
+  EmpresaFilter,
   NotaFaturamento,
   WingraphexCliente,
   WingraphexOp,
   WingraphexOpsResponse,
 } from "../schemas/wingraphex.schema.ts";
 
-const EMP_ID = 1;
+function empresaParams(empresa: EmpresaFilter): number[] {
+  if (empresa === "1") return [1];
+  if (empresa === "2") return [2];
+  return [];
+}
+
+function itemKey(empId: number, id: number): string {
+  return `${empId}:${id}`;
+}
 
 interface WingraphexOpDbRow extends MySQLRowDataPacket {
   op: string | number;
+  emp_id: string | number;
   cliente: string | null;
   descricao: string | null;
   qtd_total: string | number | null;
@@ -29,10 +39,12 @@ interface WingraphexOpDbRow extends MySQLRowDataPacket {
 }
 
 interface DocIdDbRow extends MySQLRowDataPacket {
+  emp_id: string | number;
   doc_id: string | number;
 }
 
 interface ItemNotaDbRow extends MySQLRowDataPacket {
+  emp_id: string | number;
   DOC_ID: number;
   op: string | null;
   QUANTIDADE: string | number | null;
@@ -44,6 +56,7 @@ interface ItemNotaDbRow extends MySQLRowDataPacket {
 }
 
 interface FinanceiroNotaDbRow extends MySQLRowDataPacket {
+  emp_id: string | number;
   DOC_ID: number;
   VALOR: string | number | null;
   SALDO: string | number | null;
@@ -56,6 +69,7 @@ interface EquipamentoDbRow extends MySQLRowDataPacket {
 
 interface PcpProcessoSetorDbRow extends MySQLRowDataPacket {
   op: string | number;
+  emp_id: string | number;
   codigo: string | number;
   processos: string | number;
   finalizados: string | number;
@@ -77,6 +91,7 @@ export interface WingraphexEquipamento {
 
 export interface QueryOpsByDescriptionInput {
   descricao?: string;
+  empresa: EmpresaFilter;
   clienteId?: number;
   dataInicio?: string;
   dataFim?: string;
@@ -92,6 +107,7 @@ interface WingraphexCountDbRow extends MySQLRowDataPacket {
 
 export interface QueryClientesInput {
   term?: string;
+  empresa: EmpresaFilter;
   limite: number;
 }
 
@@ -110,8 +126,15 @@ function buildOpsWhere(
   opts: QueryOpsByDescriptionInput,
 ): { sql: string; params: (string | number)[] } {
   const col = (name: string): string => `${alias}.${name}`;
-  const clauses = [`${col("EMP_ID")}=1`, `${col("ORS_CANCELADA")}<>'S'`];
+  const clauses = [`${col("ORS_CANCELADA")}<>'S'`];
   const params: (string | number)[] = [];
+
+  const empIds = empresaParams(opts.empresa);
+  const empId = empIds[0];
+  if (empId !== undefined) {
+    clauses.push(`${col("EMP_ID")} = ?`);
+    params.push(empId);
+  }
 
   if (opts.descricao !== undefined && opts.descricao.trim() !== "") {
     clauses.push(`${col("ORS_DESCRICAO")} LIKE ?`);
@@ -165,13 +188,14 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function placeholders(count: number): string {
-  return Array.from({ length: count }, () => "?").join(",");
+function tuplePlaceholders(pairs: number): string {
+  return Array.from({ length: pairs }, () => "(?,?)").join(",");
 }
 
 function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
   return {
     op: Number(row.op),
+    empId: Number(row.emp_id),
     cliente: row.cliente ?? null,
     descricao: row.descricao ?? "",
     qtd_total: toNumber(row.qtd_total),
@@ -190,104 +214,108 @@ function toWingraphexOp(row: WingraphexOpDbRow): WingraphexOp {
   };
 }
 
+interface DocDocKey {
+  empId: number;
+  docId: number;
+}
+
 async function fetchNotaDocIds(
   fastify: FastifyInstance,
-  opIds: number[],
-): Promise<number[]> {
-  if (opIds.length === 0) return [];
+  itens: { empId: number; op: number }[],
+): Promise<DocDocKey[]> {
+  if (itens.length === 0) return [];
+  const params = itens.flatMap((item) => [item.empId, String(item.op)]);
   const sql = `
-    SELECT DISTINCT di.DOC_ID AS doc_id
+    SELECT DISTINCT di.EMP_ID AS emp_id, di.DOC_ID AS doc_id
     FROM documentoitem di
-    WHERE di.EMP_ID=1 AND di.CLASSIFICACAO=0
-      AND di.CODIGOORDEMPRODUCAO IN (${placeholders(opIds.length)})`;
-  const [rows] = await fastify.wingraphex.query<DocIdDbRow[]>(
-    sql,
-    opIds.map(String),
-  );
-  return rows.map((row) => Number(row.doc_id));
+    WHERE di.CLASSIFICACAO=0
+      AND (di.EMP_ID, di.CODIGOORDEMPRODUCAO) IN (${tuplePlaceholders(itens.length)})`;
+  const [rows] = await fastify.wingraphex.query<DocIdDbRow[]>(sql, params);
+  return rows.map((row) => ({
+    empId: Number(row.emp_id),
+    docId: Number(row.doc_id),
+  }));
 }
 
 async function fetchItemsForDocs(
   fastify: FastifyInstance,
-  docIds: number[],
+  docKeys: DocDocKey[],
 ): Promise<ItemNotaDbRow[]> {
-  if (docIds.length === 0) return [];
+  if (docKeys.length === 0) return [];
+  const params = docKeys.flatMap((doc) => [doc.empId, doc.docId]);
   const sql = `
-    SELECT di.DOC_ID, di.CODIGOORDEMPRODUCAO AS op,
+    SELECT di.EMP_ID AS emp_id, di.DOC_ID, di.CODIGOORDEMPRODUCAO AS op,
            di.QUANTIDADE, di.VALORUNITARIO,
            dc.SERIENF, dc.NUMERONF, dc.NUMERODOCUMENTO,
            DATE(dc.DATAEMISSAO) AS data_emissao
     FROM documentoitem di
     JOIN documentocabecalho dc
       ON dc.EMP_ID=di.EMP_ID AND dc.CLASSIFICACAO=di.CLASSIFICACAO AND dc.DOC_ID=di.DOC_ID
-    WHERE di.EMP_ID=1 AND di.CLASSIFICACAO=0
-      AND di.DOC_ID IN (${placeholders(docIds.length)})
+    WHERE di.CLASSIFICACAO=0
+      AND (di.EMP_ID, di.DOC_ID) IN (${tuplePlaceholders(docKeys.length)})
       AND (dc.CANCELADA<>'S' OR dc.CANCELADA IS NULL)`;
-  const [rows] = await fastify.wingraphex.query<ItemNotaDbRow[]>(
-    sql,
-    docIds,
-  );
+  const [rows] = await fastify.wingraphex.query<ItemNotaDbRow[]>(sql, params);
   return rows;
 }
 
 async function fetchFinanceiroForDocs(
   fastify: FastifyInstance,
-  docIds: number[],
+  docKeys: DocDocKey[],
 ): Promise<FinanceiroNotaDbRow[]> {
-  if (docIds.length === 0) return [];
+  if (docKeys.length === 0) return [];
+  const params = docKeys.flatMap((doc) => [doc.empId, doc.docId]);
   const sql = `
-    SELECT f.DOC_ID, f.VALOR, f.SALDO
+    SELECT f.EMP_ID AS emp_id, f.DOC_ID, f.VALOR, f.SALDO
     FROM financeiro f
-    WHERE f.EMP_ID=1 AND f.CLASSIFICACAO=0
-      AND f.DOC_ID IN (${placeholders(docIds.length)})
+    WHERE f.CLASSIFICACAO=0
+      AND (f.EMP_ID, f.DOC_ID) IN (${tuplePlaceholders(docKeys.length)})
       AND f.ORIGEM='TOL_CONTASARECEBER'
       AND (f.FLAGLANCCANCELADO<>'S' OR f.FLAGLANCCANCELADO IS NULL)
       AND (f.ESTORNO<>'S' OR f.ESTORNO IS NULL)`;
-  const [rows] = await fastify.wingraphex.query<FinanceiroNotaDbRow[]>(
-    sql,
-    docIds,
-  );
+  const [rows] = await fastify.wingraphex.query<FinanceiroNotaDbRow[]>(sql, params);
   return rows;
 }
 
-function buildDocValorTotal(items: ItemNotaDbRow[]): Map<number, number> {
-  const byDoc = new Map<number, number>();
+function buildDocValorTotal(items: ItemNotaDbRow[]): Map<string, number> {
+  const byDoc = new Map<string, number>();
   for (const item of items) {
     const valor = toNumber(item.QUANTIDADE) * toNumber(item.VALORUNITARIO);
-    const docId = Number(item.DOC_ID);
-    byDoc.set(docId, (byDoc.get(docId) ?? 0) + valor);
+    const key = itemKey(Number(item.emp_id), Number(item.DOC_ID));
+    byDoc.set(key, (byDoc.get(key) ?? 0) + valor);
   }
   return byDoc;
 }
 
 function buildDocFinanceiro(
   rows: FinanceiroNotaDbRow[],
-): Map<number, { pago: number; saldo: number }> {
-  const byDoc = new Map<number, { pago: number; saldo: number }>();
+): Map<string, { pago: number; saldo: number }> {
+  const byDoc = new Map<string, { pago: number; saldo: number }>();
   for (const row of rows) {
-    const docId = Number(row.DOC_ID);
-    const current = byDoc.get(docId) ?? { pago: 0, saldo: 0 };
+    const key = itemKey(Number(row.emp_id), Number(row.DOC_ID));
+    const current = byDoc.get(key) ?? { pago: 0, saldo: 0 };
     current.pago += toNumber(row.VALOR) - toNumber(row.SALDO);
     current.saldo += toNumber(row.SALDO);
-    byDoc.set(docId, current);
+    byDoc.set(key, current);
   }
   return byDoc;
 }
 
 async function fetchPcpProcessosPorEquipamento(
   fastify: FastifyInstance,
-  opIds: number[],
+  itens: { empId: number; op: number }[],
 ): Promise<PcpProcessoSetorDbRow[]> {
+  if (itens.length === 0) return [];
+  const params = itens.flatMap((item) => [item.empId, String(item.op)]);
   const sql = `
-    SELECT pc.CODIGOOP AS op, pc.CODIGOEQUIPAMENTO AS codigo,
+    SELECT pc.EMP_ID AS emp_id, pc.CODIGOOP AS op, pc.CODIGOEQUIPAMENTO AS codigo,
            COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
     FROM pcpprocessos pc
-    WHERE pc.EMP_ID=1 AND pc.CODIGOCOMPONENTE<>-1
-      AND pc.CODIGOOP IN (${placeholders(opIds.length)})
-    GROUP BY pc.CODIGOOP, pc.CODIGOEQUIPAMENTO`;
+    WHERE pc.CODIGOCOMPONENTE<>-1
+      AND (pc.EMP_ID, pc.CODIGOOP) IN (${tuplePlaceholders(itens.length)})
+    GROUP BY pc.CODIGOOP, pc.EMP_ID, pc.CODIGOEQUIPAMENTO`;
   const [rows] = await fastify.wingraphex.query<PcpProcessoSetorDbRow[]>(
     sql,
-    opIds.map(String),
+    params,
   );
   return rows;
 }
@@ -296,44 +324,45 @@ async function enriquecerPcpComSetores(
   fastify: FastifyInstance,
   itens: WingraphexOp[],
 ): Promise<void> {
-  const opIds = itens.map((item) => item.op);
+  const ops = itens.map((item) => ({ empId: item.empId, op: item.op }));
   let rows: PcpProcessoSetorDbRow[];
   try {
-    rows = await fetchPcpProcessosPorEquipamento(fastify, opIds);
+    rows = await fetchPcpProcessosPorEquipamento(fastify, ops);
   } catch (err) {
     fastify.log.error({ err }, "Pcp processos por equipamento query failed");
     throw new AppError(503, "Banco Wingraphex indisponível.");
   }
   if (rows.length === 0) return;
 
+  const empIds = [...new Set(itens.map((item) => item.empId))];
   const [setores, vinculos] = await Promise.all([
     PcpSetorModel.find().sort({ ordem: 1 }).exec(),
-    PcpEquipamentoSetorModel.find({ empId: EMP_ID })
-      .select("codigoEquipamento setorId")
+    PcpEquipamentoSetorModel.find({ empId: { $in: empIds } })
+      .select("empId codigoEquipamento setorId")
       .exec(),
   ]);
 
-  const setorPorEquipamento = new Map<number, string>(
+  const setorPorEquipamento = new Map<string, string>(
     vinculos.map((vinculo) => [
-      vinculo.codigoEquipamento,
+      itemKey(vinculo.empId, vinculo.codigoEquipamento),
       String(vinculo.setorId),
     ]),
   );
 
-  const porOp = new Map<number, Map<number, { processos: number; finalizados: number }>>();
+  const porOp = new Map<string, Map<number, { processos: number; finalizados: number }>>();
   for (const row of rows) {
-    const opId = Number(row.op);
+    const key = itemKey(Number(row.emp_id), Number(row.op));
     const codigo = Number(row.codigo);
-    const porCodigo = porOp.get(opId) ?? new Map();
+    const porCodigo = porOp.get(key) ?? new Map();
     porCodigo.set(codigo, {
       processos: toNumber(row.processos),
       finalizados: toNumber(row.finalizados),
     });
-    porOp.set(opId, porCodigo);
+    porOp.set(key, porCodigo);
   }
 
   for (const item of itens) {
-    const porCodigo = porOp.get(item.op);
+    const porCodigo = porOp.get(itemKey(item.empId, item.op));
     if (!porCodigo) continue;
 
     const setoresComProcessos: PcpSetorProgresso[] = [];
@@ -341,7 +370,7 @@ async function enriquecerPcpComSetores(
       let processos = 0;
       let finalizados = 0;
       for (const [codigo, agregado] of porCodigo) {
-        if (setorPorEquipamento.get(codigo) === setor.id) {
+        if (setorPorEquipamento.get(itemKey(item.empId, codigo)) === setor.id) {
           processos += agregado.processos;
           finalizados += agregado.finalizados;
         }
@@ -398,14 +427,15 @@ export async function queryOpsByDescription(
 
   const planejJoin = `
     LEFT JOIN (
-      SELECT ple.ORS_ID AS op,
+      SELECT ple.ORS_ID AS op, ple.EMP_ID AS emp_id,
              MIN(CASE WHEN ple.PLE_DATAENTREGA >= '2000-01-01'
                       THEN DATE(ple.PLE_DATAENTREGA) END) AS data_prevista
-      FROM ordemservplanejentrega ple WHERE ple.EMP_ID=1 AND ple.ORS_ID IN (
-        SELECT os4.ORS_ID FROM ordemservico os4 ${planejSql}
+      FROM ordemservplanejentrega ple
+      WHERE (ple.EMP_ID, ple.ORS_ID) IN (
+        SELECT os4.EMP_ID, os4.ORS_ID FROM ordemservico os4 ${planejSql}
       )
-      GROUP BY ple.ORS_ID
-    ) planej ON planej.op=os.ORS_ID`;
+      GROUP BY ple.ORS_ID, ple.EMP_ID
+    ) planej ON planej.op=os.ORS_ID AND planej.emp_id=os.EMP_ID`;
 
   const countSql = `
     SELECT COUNT(*) AS total
@@ -419,6 +449,7 @@ export async function queryOpsByDescription(
 
   const sql = `
     SELECT os.ORS_ID AS op,
+           os.EMP_ID AS emp_id,
            (SELECT CONCAT_WS(' / ',
                    NULLIF(TRIM(p.PES_NOME_RAZAO), ''),
                    NULLIF(NULLIF(TRIM(p.PES_NOMEFANTASIA), ''), TRIM(p.PES_NOME_RAZAO)))
@@ -435,12 +466,15 @@ export async function queryOpsByDescription(
     JOIN op o ON o.EMP_ID=os.EMP_ID AND o.ORS_ID=os.ORS_ID
     ${planejJoin}
     LEFT JOIN (
-      SELECT pc.CODIGOOP AS op, COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
-      FROM pcpprocessos pc WHERE pc.EMP_ID=1 AND pc.CODIGOCOMPONENTE<>-1 AND pc.CODIGOOP IN (
-        SELECT os3.ORS_ID FROM ordemservico os3 ${pcpSql}
-      )
-      GROUP BY pc.CODIGOOP
-    ) pcp ON pcp.op=os.ORS_ID
+      SELECT pc.CODIGOOP AS op, pc.EMP_ID AS emp_id,
+             COUNT(*) AS processos, SUM(pc.STATUS='F') AS finalizados
+      FROM pcpprocessos pc
+      WHERE pc.CODIGOCOMPONENTE<>-1
+        AND (pc.EMP_ID, pc.CODIGOOP) IN (
+          SELECT os3.EMP_ID, os3.ORS_ID FROM ordemservico os3 ${pcpSql}
+        )
+      GROUP BY pc.CODIGOOP, pc.EMP_ID
+    ) pcp ON pcp.op=os.ORS_ID AND pcp.emp_id=os.EMP_ID
     ${mainSql}
     ${buildOpsOrderBy(input)}
     LIMIT ? OFFSET ?`;
@@ -470,30 +504,33 @@ export async function queryOpsByDescription(
     itens = rows.map(toWingraphexOp);
 
     if (itens.length > 0) {
-      const opIds = itens.map((item) => item.op);
-      const byOp = new Map<number, WingraphexOp>(
-        itens.map((item) => [item.op, item]),
+      const ops = itens.map((item) => ({ empId: item.empId, op: item.op }));
+      const byKey = new Map<string, WingraphexOp>(
+        itens.map((item) => [itemKey(item.empId, item.op), item]),
       );
-      const docIds = await fetchNotaDocIds(fastify, opIds);
+      const docKeys = await fetchNotaDocIds(fastify, ops);
       const [items, financeiroRows] = await Promise.all([
-        fetchItemsForDocs(fastify, docIds),
-        fetchFinanceiroForDocs(fastify, docIds),
+        fetchItemsForDocs(fastify, docKeys),
+        fetchFinanceiroForDocs(fastify, docKeys),
       ]);
 
       const docValorTotal = buildDocValorTotal(items);
       const docFinanceiro = buildDocFinanceiro(financeiroRows);
-      const pageOps = new Set(opIds);
+      const pageOps = new Set(ops.map((op) => itemKey(op.empId, op.op)));
 
-      const comItens = new Map<number, Map<number, NotaFaturamento>>();
+      const comItens = new Map<string, Map<string, NotaFaturamento>>();
       for (const item of items) {
+        const itemEmpId = Number(item.emp_id);
         const opId = Number(item.op);
-        if (item.op === null || item.op === "" || !pageOps.has(opId)) {
+        const opKey = itemKey(itemEmpId, opId);
+        if (item.op === null || item.op === "" || !pageOps.has(opKey)) {
           continue;
         }
         const valor = toNumber(item.QUANTIDADE) * toNumber(item.VALORUNITARIO);
         const quantidade = toNumber(item.QUANTIDADE);
-        const porDoc = comItens.get(opId) ?? new Map<number, NotaFaturamento>();
-        const nota = porDoc.get(item.DOC_ID) ?? {
+        const docKey = itemKey(itemEmpId, Number(item.DOC_ID));
+        const porDoc = comItens.get(opKey) ?? new Map<string, NotaFaturamento>();
+        const nota = porDoc.get(docKey) ?? {
           serie: item.SERIENF ?? null,
           numero: String(item.NUMERONF ?? item.NUMERODOCUMENTO ?? item.DOC_ID),
           data: item.data_emissao ?? null,
@@ -502,12 +539,12 @@ export async function queryOpsByDescription(
         };
         nota.valor += valor;
         nota.quantidade += quantidade;
-        porDoc.set(item.DOC_ID, nota);
-        comItens.set(opId, porDoc);
+        porDoc.set(docKey, nota);
+        comItens.set(opKey, porDoc);
       }
 
-      for (const opId of opIds) {
-        const porDoc = comItens.get(opId);
+      for (const item of itens) {
+        const porDoc = comItens.get(itemKey(item.empId, item.op));
         if (!porDoc) continue;
 
         let valorFaturado = 0;
@@ -516,10 +553,10 @@ export async function queryOpsByDescription(
         let saldo = 0;
         const notas: NotaFaturamento[] = [];
 
-        for (const [docId, nota] of porDoc) {
-          const totalDoc = docValorTotal.get(docId) ?? 0;
+        for (const [docKey, nota] of porDoc) {
+          const totalDoc = docValorTotal.get(docKey) ?? 0;
           const share = totalDoc > 0 ? nota.valor / totalDoc : 0;
-          const financeiroDoc = docFinanceiro.get(docId);
+          const financeiroDoc = docFinanceiro.get(docKey);
           if (financeiroDoc) {
             pago += financeiroDoc.pago * share;
             saldo += financeiroDoc.saldo * share;
@@ -533,14 +570,14 @@ export async function queryOpsByDescription(
           (a.data ?? "").localeCompare(b.data ?? ""),
         );
 
-        const item = byOp.get(opId);
-        if (item) {
-          item.faturamento = {
+        const dbItem = byKey.get(itemKey(item.empId, item.op));
+        if (dbItem) {
+          dbItem.faturamento = {
             valor_faturado: round2(valorFaturado),
             quantidade_faturada: round2(quantidadeFaturada),
             notas,
           };
-          item.financeiro = {
+          dbItem.financeiro = {
             pago: round2(pago),
             saldo: round2(saldo),
           };
@@ -592,11 +629,17 @@ export async function queryClientes(
   input: QueryClientesInput,
 ): Promise<WingraphexCliente[]> {
   const clauses = [
-    "p.EMP_ID=1",
     "os.ORS_CANCELADA<>'S'",
     "os.CLI_ID=p.PES_ID",
   ];
   const params: (string | number)[] = [];
+
+  const empIds = empresaParams(input.empresa);
+  const empId = empIds[0];
+  if (empId !== undefined) {
+    clauses.push("p.EMP_ID = ?");
+    params.push(empId);
+  }
 
   if (input.term !== undefined && input.term !== "") {
     clauses.push("(p.PES_NOME_RAZAO LIKE ? OR p.PES_NOMEFANTASIA LIKE ?)");
