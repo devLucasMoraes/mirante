@@ -4,7 +4,21 @@ import { toast } from "sonner";
 
 import { useAuthStore } from "@/features/auth/auth.store";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
+export function resolveBaseUrl(raw: string | undefined): string {
+  if (raw === undefined) {
+    return "http://localhost:3000/api";
+  }
+  if (
+    raw.startsWith("http://") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("/")
+  ) {
+    return raw;
+  }
+  return "/api";
+}
+
+const BASE_URL = resolveBaseUrl(import.meta.env.VITE_API_URL);
 
 export const api = axios.create({
   baseURL: BASE_URL,

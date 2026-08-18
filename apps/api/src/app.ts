@@ -78,7 +78,7 @@ export async function createApp(
   fastify.setValidatorCompiler(validatorCompiler);
   fastify.setSerializerCompiler(serializerCompiler);
 
-  await fastify.register(helmet);
+  await fastify.register(helmet, { hsts: false });
   await fastify.register(cors, {
     origin: config.CORS_ORIGIN,
     credentials: true,

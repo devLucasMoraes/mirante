@@ -1,10 +1,30 @@
 import { http, HttpResponse } from "msw";
 import { describe, expect, test, vi } from "vitest";
 
-import { api } from "@/api/client";
+import { api, resolveBaseUrl } from "@/api/client";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { testUser } from "@/test/handlers";
 import { server } from "@/test/server";
+
+describe("resolveBaseUrl", () => {
+  test("usa o valor quando é uma URL http(s) válida", () => {
+    expect(resolveBaseUrl("https://192.168.1.16/api")).toBe(
+      "https://192.168.1.16/api",
+    );
+  });
+
+  test("usa o valor quando é relativo à raiz", () => {
+    expect(resolveBaseUrl("/api")).toBe("/api");
+  });
+
+  test("cai em /api quando o valor é um caminho mangleado (ex.: Git Bash)", () => {
+    expect(resolveBaseUrl("C:/Program Files/Git/api")).toBe("/api");
+  });
+
+  test("usa localhost em dev quando não definido", () => {
+    expect(resolveBaseUrl(undefined)).toBe("http://localhost:3000/api");
+  });
+});
 
 describe("interceptor de resposta 401", () => {
   test("chama /auth/refresh e repete a requisição original", async () => {

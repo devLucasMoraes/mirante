@@ -26,7 +26,11 @@ const envSchema = z.object({
   ACCESS_TOKEN_TTL: z.string().min(1).default("15m"),
   REFRESH_TOKEN_TTL: z.string().min(1).default("7d"),
   COOKIE_SECRET: z.string().min(32),
-  COOKIE_SECURE: z.coerce.boolean().default(isProduction),
+  COOKIE_SECURE: z.preprocess(
+    (value) =>
+      typeof value === "string" ? value.toLowerCase() === "true" : value,
+    z.boolean().default(isProduction),
+  ),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
   SEED_ADMIN_USERNAME: z.string().min(3).default("admin"),
