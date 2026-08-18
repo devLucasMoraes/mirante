@@ -42,6 +42,7 @@ export async function createApp(
   options: CreateAppOptions = {},
 ): Promise<FastifyInstance> {
   const fastify = Fastify({
+    trustProxy: true,
     logger:
       options.logger === false
         ? false
