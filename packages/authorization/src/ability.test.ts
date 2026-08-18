@@ -38,10 +38,11 @@ describe("defineAbilityFor", () => {
     expect(ability.can("delete", reciboDeTerceiro)).toBe(false);
   });
 
-  test("não-admin pode atualizar o próprio nome e senha, mas não o role", () => {
+  test("não-admin pode atualizar o próprio usuário (login) e senha, mas não o nome nem o role", () => {
     const ability = defineAbilityFor(baseUser);
-    expect(ability.can("update", "User", "name")).toBe(true);
+    expect(ability.can("update", "User", "username")).toBe(true);
     expect(ability.can("update", "User", "password")).toBe(true);
+    expect(ability.can("update", "User", "name")).toBe(false);
     expect(ability.can("update", "User", "role")).toBe(false);
   });
 });

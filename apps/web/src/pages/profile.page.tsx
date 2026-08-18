@@ -27,19 +27,22 @@ export function ProfilePage() {
   const ability = useAbility();
   const updateMutation = useUpdateUserMutation();
 
+  const [username, setUsername] = useState(user?.username ?? "");
   const [name, setName] = useState(user?.name ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setUsername(user?.username ?? "");
     setName(user?.name ?? "");
-  }, [user?.name]);
+  }, [user?.username, user?.name]);
 
   if (user === null) {
     return null;
   }
 
+  const canUpdateUsername = ability.can("update", user, "username");
   const canUpdateName = ability.can("update", user, "name");
   const canUpdatePassword = ability.can("update", user, "password");
 
@@ -53,6 +56,9 @@ export function ProfilePage() {
     }
 
     const payload: Record<string, string> = {};
+    if (canUpdateUsername) {
+      payload.username = username;
+    }
     if (canUpdateName) {
       payload.name = name;
     }
@@ -71,6 +77,7 @@ export function ProfilePage() {
       {
         onSuccess: (updated) => {
           setUser(updated);
+          setUsername(updated.username);
           setName(updated.name);
           setPassword("");
           setConfirmPassword("");
@@ -104,7 +111,7 @@ export function ProfilePage() {
         <CardHeader>
           <CardTitle>Dados da conta</CardTitle>
           <CardDescription>
-            Seu usuário e seu papel não podem ser alterados por você.
+            Seu nome e seu papel são gerenciados por um administrador.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,8 +120,10 @@ export function ProfilePage() {
               <Label htmlFor="profile-username">Usuário</Label>
               <Input
                 id="profile-username"
-                value={user.username}
-                disabled
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                disabled={!canUpdateUsername || updateMutation.isPending}
               />
             </div>
 
@@ -127,20 +136,17 @@ export function ProfilePage() {
               </div>
             </div>
 
-            {canUpdateName ? (
-              <div className="space-y-2">
-                <Label htmlFor="profile-name">Nome</Label>
-                <Input
-                  id="profile-name"
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  disabled={updateMutation.isPending}
-                />
-              </div>
-            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Nome</Label>
+              <Input
+                id="profile-name"
+                type="text"
+                placeholder="Seu nome completo"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={!canUpdateName || updateMutation.isPending}
+              />
+            </div>
 
             {canUpdatePassword ? (
               <div className="space-y-2">

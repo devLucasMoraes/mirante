@@ -30,6 +30,10 @@ export const updateUserSchema = z.object({
 export type UpdateUserPayload = z.infer<typeof updateUserSchema>;
 
 export const updateProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, "O usuário deve ter ao menos 3 caracteres")
+    .optional(),
   name: z.string().min(1, "Informe o nome").optional(),
   password: z
     .string()

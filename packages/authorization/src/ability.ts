@@ -24,7 +24,7 @@ export function defineRulesFor(role: UserRole): RawRuleOf<AppAbility>[] {
   if (role === "admin") {
     builder.can("manage", "all");
   } else {
-    builder.can("update", "User", ["name", "password"]);
+    builder.can("update", "User", ["username", "password"]);
   }
 
   return builder.rules;
@@ -45,7 +45,7 @@ export function defineAbilityFor(user: User): AppAbility {
   if (user.role === "admin") {
     builder.can("manage", "all");
   } else {
-    builder.can("update", "User", ["name", "password"], { id: user.id });
+    builder.can("update", "User", ["username", "password"], { id: user.id });
   }
 
   return builder.build({
