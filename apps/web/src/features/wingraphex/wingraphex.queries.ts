@@ -9,10 +9,16 @@ import { queryClientes, queryOps } from "@/api/wingraphex.api";
 import { wingraphexKeys } from "./wingraphex.query-keys";
 import type {
   QueryClientesParams,
+  QueryOpsImpressaoParams,
   QueryOpsParams,
+  WingraphexOp,
 } from "./wingraphex.schemas";
 
-export const OPS_PER_PAGE = 10;
+export const OPS_PER_PAGE = 15;
+
+export const OPS_POR_FOLHA = 15;
+
+const IMPRESSAO_PAGE_LIMITE = 100;
 
 function hasOpsCriteria(params: QueryOpsParams): boolean {
   return (
@@ -41,6 +47,55 @@ export function opsQueryOptions(params: QueryOpsParams) {
 
 export function useOpsQuery(params: QueryOpsParams) {
   return useQuery(opsQueryOptions(params));
+}
+
+async function queryAllOps(
+  params: QueryOpsImpressaoParams,
+): Promise<WingraphexOp[]> {
+  const base: QueryOpsParams = {
+    ...params,
+    pagina: 1,
+    limite: IMPRESSAO_PAGE_LIMITE,
+  };
+  const primeira = await queryOps(base);
+  const itens = [...primeira.itens];
+  if (primeira.total <= itens.length) {
+    return itens;
+  }
+  const totalPaginas = Math.ceil(primeira.total / IMPRESSAO_PAGE_LIMITE);
+  const restantes = await Promise.all(
+    Array.from({ length: totalPaginas - 1 }, (_, index) =>
+      queryOps({ ...base, pagina: index + 2 }),
+    ),
+  );
+  for (const pagina of restantes) {
+    itens.push(...pagina.itens);
+  }
+  return itens;
+}
+
+export function opsImpressaoQueryOptions(
+  params: QueryOpsImpressaoParams,
+  enabled = true,
+) {
+  const normalized: QueryOpsImpressaoParams = {
+    ...params,
+    empresa: params.empresa ?? "ambas",
+    ordenarPor: params.ordenarPor ?? "emissao",
+    direcao: params.direcao ?? "asc",
+  };
+  return queryOptions({
+    queryKey: wingraphexKeys.opsImpressao(normalized),
+    queryFn: () => queryAllOps(normalized),
+    enabled: hasOpsCriteria(normalized) && enabled,
+  });
+}
+
+export function useOpsImpressaoQuery(
+  params: QueryOpsImpressaoParams,
+  enabled = true,
+) {
+  return useQuery(opsImpressaoQueryOptions(params, enabled));
 }
 
 export function clientesQueryOptions(params: QueryClientesParams) {

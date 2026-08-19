@@ -49,6 +49,11 @@ export const queryOpsParamsSchema = z
 
 export type QueryOpsParams = z.infer<typeof queryOpsParamsSchema>;
 
+export type QueryOpsImpressaoParams = Omit<
+  QueryOpsParams,
+  "pagina" | "limite"
+>;
+
 export const queryClientesParamsSchema = z.object({
   term: z.string().trim().optional(),
   empresa: empresaSchema.optional(),

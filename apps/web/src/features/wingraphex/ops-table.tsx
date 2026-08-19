@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { ChevronDown, History, Loader2, PackageSearch, Search, TriangleAlert } from "lucide-react";
@@ -33,8 +34,9 @@ import { OpsPagination } from "./ops-pagination";
 import { PcpSteps } from "./pcp-steps";
 import { empresaNome, formatCurrency, formatDate, formatQuantity } from "./wingraphex.format";
 import type { NotaFaturamento, WingraphexOp } from "./wingraphex.schemas";
+import { getFaturamentoStatus } from "./wingraphex.status";
 
-const SKELETON_CARDS = 6;
+const SKELETON_CARDS = 9;
 
 type FaturamentoStatus = "A FATURAR" | "FATURADO_PARCIALMENTE" | "FATURADA";
 
@@ -44,27 +46,6 @@ const FATURAMENTO_STATUS_STYLES: Record<FaturamentoStatus, string> = {
     "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   FATURADA: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400",
 };
-
-function getFaturamentoStatus(op: WingraphexOp): {
-  label: string;
-  status: FaturamentoStatus;
-} {
-  const valorFaturado = op.faturamento.valor_faturado;
-
-  if (valorFaturado >= op.valor_servico - 0.01) {
-    return { label: "Faturada", status: "FATURADA" };
-  }
-
-  if (valorFaturado > 0) {
-    return { label: "Faturado parcialmente", status: "FATURADO_PARCIALMENTE" };
-  }
-
-  if (op.status === "TSF_FATURADA") {
-    return { label: "Faturada", status: "FATURADA" };
-  }
-
-  return { label: "A faturar", status: "A FATURAR" };
-}
 
 function StatusBadge({ op }: { op: WingraphexOp }) {
   const { label, status } = getFaturamentoStatus(op);
@@ -411,6 +392,7 @@ export function OpsTable({
   onHistorico,
   onRetry,
   onPageChange,
+  headerActions,
 }: {
   hasCriteria: boolean;
   itens: WingraphexOp[] | undefined;
@@ -426,6 +408,7 @@ export function OpsTable({
   onHistorico: (op: number) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
+  headerActions?: ReactNode;
 }) {
   const totalCount = total ?? itens?.length ?? 0;
 
@@ -440,9 +423,12 @@ export function OpsTable({
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Resultados</CardTitle>
-          {hasCriteria && !isPending && isFetching ? (
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          ) : null}
+          <div className="flex items-center gap-2">
+            {totalCount > 0 && headerActions ? headerActions : null}
+            {hasCriteria && !isPending && isFetching ? (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            ) : null}
+          </div>
         </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>

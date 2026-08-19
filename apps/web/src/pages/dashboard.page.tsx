@@ -20,11 +20,16 @@ import { ReciboDialog } from "@/features/entregas/recibo-dialog";
 import { useOpsFiltersStore } from "@/features/wingraphex/ops-filters.store";
 import type { OpFilters } from "@/features/wingraphex/ops-filters-sheet";
 import { OpsFiltersSheet } from "@/features/wingraphex/ops-filters-sheet";
+import type { ImpressaoOpsContexto } from "@/features/wingraphex/ops-pdf";
+import { OpsPrintButtons } from "@/features/wingraphex/ops-print-actions";
 import { useOpsSelectionStore } from "@/features/wingraphex/ops-selection.store";
 import { OpsTable } from "@/features/wingraphex/ops-table";
 import { empresaNome } from "@/features/wingraphex/wingraphex.format";
 import { useOpsQuery } from "@/features/wingraphex/wingraphex.queries";
-import type { QueryOpsParams } from "@/features/wingraphex/wingraphex.schemas";
+import type {
+  QueryOpsImpressaoParams,
+  QueryOpsParams,
+} from "@/features/wingraphex/wingraphex.schemas";
 
 export function DashboardPage() {
   const searchInput = useOpsFiltersStore((state) => state.searchInput);
@@ -75,6 +80,24 @@ export function DashboardPage() {
   };
   const opsQuery = useOpsQuery(params);
   const opsItens = opsQuery.data?.itens;
+
+  const impressaoParams: QueryOpsImpressaoParams = {
+    descricao: params.descricao,
+    empresa: params.empresa,
+    clienteId: params.clienteId,
+    dataInicio: params.dataInicio,
+    dataFim: params.dataFim,
+    ordenarPor: params.ordenarPor,
+    direcao: params.direcao,
+  };
+
+  const impressaoContexto: ImpressaoOpsContexto = {
+    descricao: impressaoParams.descricao,
+    clienteNome: filters.clienteNome,
+    empresa: filters.empresa,
+    dataInicio: impressaoParams.dataInicio,
+    dataFim: impressaoParams.dataFim,
+  };
 
   useEffect(() => {
     if (!irParaUltimaPagina || opsQuery.data === undefined) {
@@ -290,6 +313,12 @@ export function DashboardPage() {
         onHistorico={setHistoricoOp}
         onRetry={() => void opsQuery.refetch()}
         onPageChange={handlePageChange}
+        headerActions={
+          <OpsPrintButtons
+            params={impressaoParams}
+            contexto={impressaoContexto}
+          />
+        }
       />
 
       <OpsFiltersSheet
