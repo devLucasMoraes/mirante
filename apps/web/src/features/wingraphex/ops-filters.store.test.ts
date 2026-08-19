@@ -15,9 +15,10 @@ beforeEach(() => {
       dataInicio: "",
       dataFim: "",
       ordenarPor: "emissao",
-      direcao: "desc",
+      direcao: "asc",
     },
     pagina: 1,
+    irParaUltimaPagina: false,
   });
 });
 
@@ -37,6 +38,7 @@ function persistedState() {
       direcao: "asc" | "desc";
     };
     pagina: number;
+    irParaUltimaPagina?: boolean;
   } };
 }
 
@@ -50,7 +52,7 @@ describe("ops-filters.store", () => {
       dataInicio: "",
       dataFim: "",
       ordenarPor: "emissao",
-      direcao: "desc",
+      direcao: "asc",
     });
     expect(state.pagina).toBe(1);
 
@@ -67,6 +69,7 @@ describe("ops-filters.store", () => {
     useOpsFiltersStore.getState().applySearch("folder");
 
     expect(useOpsFiltersStore.getState().pagina).toBe(1);
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
     expect(persistedState().state.pagina).toBe(1);
   });
 
@@ -114,6 +117,103 @@ describe("ops-filters.store", () => {
     expect(persisted.filters.clienteId).toBe(7);
     expect(persisted.filters.dataInicio).toBe("2026-01-01");
     expect(persisted.filters.dataFim).toBe("2026-03-31");
+  });
+
+  test("applyFilters com direção crescente sinaliza ir para a última página", () => {
+    useOpsFiltersStore
+      .getState()
+      .applyFilters({
+        empresa: "ambas",
+        dataInicio: "",
+        dataFim: "",
+        ordenarPor: "emissao",
+        direcao: "asc",
+      });
+
+    const state = useOpsFiltersStore.getState();
+    expect(state.pagina).toBe(1);
+    expect(state.irParaUltimaPagina).toBe(true);
+    expect(persistedState().state.irParaUltimaPagina).toBeUndefined();
+  });
+
+  test("applyFilters com direção decrescente não sinaliza última página", () => {
+    useOpsFiltersStore
+      .getState()
+      .applyFilters({
+        empresa: "ambas",
+        dataInicio: "",
+        dataFim: "",
+        ordenarPor: "emissao",
+        direcao: "desc",
+      });
+
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+  });
+
+  test("applySearch, remove* e clear* sinalizam a última página em asc", () => {
+    useOpsFiltersStore
+      .getState()
+      .applyFilters({
+        empresa: "ambas",
+        clienteId: 7,
+        clienteNome: "Gráfica Bella",
+        dataInicio: "2026-01-01",
+        dataFim: "",
+        ordenarPor: "emissao",
+        direcao: "asc",
+      });
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().applySearch("cartaz");
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().clearSearch();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().removeCliente();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().removeEmpresa();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().removeData();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+
+    useOpsFiltersStore.getState().clearFilters();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
+  });
+
+  test("applySearch e remove* não sinalizam a última página em desc", () => {
+    useOpsFiltersStore
+      .getState()
+      .applyFilters({
+        empresa: "ambas",
+        clienteId: 7,
+        clienteNome: "Gráfica Bella",
+        dataInicio: "2026-01-01",
+        dataFim: "",
+        ordenarPor: "emissao",
+        direcao: "desc",
+      });
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().applySearch("cartaz");
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().clearSearch();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().removeCliente();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().removeEmpresa();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().removeData();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(false);
+
+    useOpsFiltersStore.getState().clearFilters();
+    expect(useOpsFiltersStore.getState().irParaUltimaPagina).toBe(true);
   });
 
   test("setPagina persiste e applySearch mantém o filtro", () => {

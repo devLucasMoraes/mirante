@@ -13,6 +13,7 @@ type OpsFiltersState = {
   descricao: string;
   filters: OpFilters;
   pagina: number;
+  irParaUltimaPagina: boolean;
   setSearchInput: (value: string) => void;
   applySearch: (term: string) => void;
   clearSearch: () => void;
@@ -22,6 +23,7 @@ type OpsFiltersState = {
   removeData: () => void;
   clearFilters: () => void;
   setPagina: (page: number) => void;
+  setIrParaUltimaPagina: (value: boolean) => void;
 };
 
 export const useOpsFiltersStore = create<OpsFiltersState>()(
@@ -31,14 +33,31 @@ export const useOpsFiltersStore = create<OpsFiltersState>()(
       descricao: "",
       filters: EMPTY_FILTERS,
       pagina: 1,
+      irParaUltimaPagina: false,
 
       setSearchInput: (searchInput) => set({ searchInput }),
 
-      applySearch: (descricao) => set({ descricao, pagina: 1 }),
+      applySearch: (descricao) =>
+        set((state) => ({
+          descricao,
+          pagina: 1,
+          irParaUltimaPagina: state.filters.direcao === "asc",
+        })),
 
-      clearSearch: () => set({ searchInput: "", descricao: "", pagina: 1 }),
+      clearSearch: () =>
+        set((state) => ({
+          searchInput: "",
+          descricao: "",
+          pagina: 1,
+          irParaUltimaPagina: state.filters.direcao === "asc",
+        })),
 
-      applyFilters: (filters) => set({ filters, pagina: 1 }),
+      applyFilters: (filters) =>
+        set({
+          filters,
+          pagina: 1,
+          irParaUltimaPagina: filters.direcao === "asc",
+        }),
 
       removeCliente: () =>
         set((state) => ({
@@ -49,12 +68,14 @@ export const useOpsFiltersStore = create<OpsFiltersState>()(
             clienteFantasia: undefined,
           },
           pagina: 1,
+          irParaUltimaPagina: state.filters.direcao === "asc",
         })),
 
       removeEmpresa: () =>
         set((state) => ({
           filters: { ...state.filters, empresa: "ambas" },
           pagina: 1,
+          irParaUltimaPagina: state.filters.direcao === "asc",
         })),
 
       removeData: () =>
@@ -65,15 +86,29 @@ export const useOpsFiltersStore = create<OpsFiltersState>()(
             dataFim: "",
           },
           pagina: 1,
+          irParaUltimaPagina: state.filters.direcao === "asc",
         })),
 
-      clearFilters: () => set({ filters: EMPTY_FILTERS, pagina: 1 }),
+      clearFilters: () =>
+        set({
+          filters: EMPTY_FILTERS,
+          pagina: 1,
+          irParaUltimaPagina: EMPTY_FILTERS.direcao === "asc",
+        }),
 
       setPagina: (pagina) => set({ pagina }),
+
+      setIrParaUltimaPagina: (irParaUltimaPagina) => set({ irParaUltimaPagina }),
     }),
     {
       name: OPS_FILTERS_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        searchInput: state.searchInput,
+        descricao: state.descricao,
+        filters: state.filters,
+        pagina: state.pagina,
+      }),
       merge: (persisted, current) => {
         const state = persisted as Partial<OpsFiltersState> | undefined;
         return {

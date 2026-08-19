@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { FilePlus2, Search, SlidersHorizontal, X } from "lucide-react";
 
@@ -39,6 +39,12 @@ export function DashboardPage() {
   const removeEmpresaFilter = useOpsFiltersStore((state) => state.removeEmpresa);
   const removeDataFilter = useOpsFiltersStore((state) => state.removeData);
   const setPagina = useOpsFiltersStore((state) => state.setPagina);
+  const irParaUltimaPagina = useOpsFiltersStore(
+    (state) => state.irParaUltimaPagina,
+  );
+  const setIrParaUltimaPagina = useOpsFiltersStore(
+    (state) => state.setIrParaUltimaPagina,
+  );
   const selecionadas = useOpsSelectionStore((state) => state.selecionadas);
   const toggleSelection = useOpsSelectionStore((state) => state.toggle);
   const clearSelecionadas = useOpsSelectionStore((state) => state.clear);
@@ -69,6 +75,17 @@ export function DashboardPage() {
   };
   const opsQuery = useOpsQuery(params);
   const opsItens = opsQuery.data?.itens;
+
+  useEffect(() => {
+    if (!irParaUltimaPagina || opsQuery.data === undefined) {
+      return;
+    }
+    const { totalPaginas } = opsQuery.data;
+    if (totalPaginas > 0) {
+      setPagina(totalPaginas);
+    }
+    setIrParaUltimaPagina(false);
+  }, [irParaUltimaPagina, opsQuery.data, setPagina, setIrParaUltimaPagina]);
 
   const opsPorId = useMemo(() => {
     const mapa = new Map<number, NonNullable<typeof opsItens>[number]>();

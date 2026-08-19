@@ -44,7 +44,7 @@ export const EMPTY_FILTERS: OpFilters = {
   dataInicio: "",
   dataFim: "",
   ordenarPor: "emissao",
-  direcao: "desc",
+  direcao: "asc",
 };
 
 export function OpsFiltersSheet({

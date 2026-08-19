@@ -28,7 +28,7 @@ export function opsQueryOptions(params: QueryOpsParams) {
     ...params,
     empresa: params.empresa ?? "ambas",
     ordenarPor: params.ordenarPor ?? "emissao",
-    direcao: params.direcao ?? "desc",
+    direcao: params.direcao ?? "asc",
     pagina: params.pagina ?? 1,
     limite: OPS_PER_PAGE,
   };

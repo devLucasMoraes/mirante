@@ -15,7 +15,7 @@ export const queryOpsQuerySchema = z
     dataInicio: dateStringSchema.optional(),
     dataFim: dateStringSchema.optional(),
     ordenarPor: z.enum(["emissao", "prevista"]).default("emissao"),
-    direcao: z.enum(["asc", "desc"]).default("desc"),
+    direcao: z.enum(["asc", "desc"]).default("asc"),
     pagina: z.coerce.number().int().min(1).default(1),
     limite: z.coerce.number().int().min(1).max(1000).default(100),
   })

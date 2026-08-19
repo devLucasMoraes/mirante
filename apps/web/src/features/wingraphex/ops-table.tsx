@@ -169,10 +169,6 @@ function NotasList({ notas }: { notas: NotaFaturamento[] }) {
     </div>
   );
 
-  if (notas.length === 1) {
-    return chips;
-  }
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>{chips}</TooltipTrigger>
@@ -181,7 +177,7 @@ function NotasList({ notas }: { notas: NotaFaturamento[] }) {
           {notas.map((nota) => (
             <li key={formatNotaNumero(nota)} className="flex flex-col gap-0.5">
               <span className="font-medium">{formatNotaNumero(nota)}</span>
-              <span className="text-muted-foreground">
+              <span className="text-background/70">
                 {nota.data ? formatDate(nota.data) : "—"} ·{" "}
                 {formatQuantity(nota.quantidade)} un ·{" "}
                 {formatCurrency(nota.valor)}
