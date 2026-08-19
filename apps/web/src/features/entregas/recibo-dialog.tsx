@@ -147,130 +147,139 @@ export function ReciboDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader>
           <DialogTitle>Gerar recibo de entrega</DialogTitle>
           <DialogDescription>
-            Revise a descrição e a quantidade de cada OP antes de gerar o recibo.
+            Revise a descrição e a quantidade de cada OP antes de gerar o
+            recibo.
           </DialogDescription>
         </DialogHeader>
 
-        {error ? (
-          <div
-            role="alert"
-            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            <TriangleAlert className="size-4 shrink-0" />
-            {error}
-          </div>
-        ) : null}
-
-        <div className="flex flex-col gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="recibo-data-entrega">Data de entrega</Label>
-            <Input
-              id="recibo-data-entrega"
-              type="date"
-              value={dataEntrega}
-              onChange={(event) => setDataEntrega(event.target.value)}
-              disabled={createMutation.isPending}
-            />
-          </div>
-
-          {hasUltrapassa ? (
-            <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+        <div className="min-h-0 overflow-y-auto">
+          {error ? (
+            <div
+              role="alert"
+              className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               <TriangleAlert className="size-4 shrink-0" />
-              Alguma OP recebeu mais do que a quantidade total cadastrada. Revise
-              os valores ou prossiga mesmo assim.
+              {error}
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-2">
-            <Label>Itens do recibo</Label>
-            {linhas.length === 0 ? (
-              <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Nenhuma OP selecionada.
-              </p>
-            ) : (
-              linhas.map((linha) => {
-                const informacao = itens.find((item) => item.op === linha.op);
-                return (
-                  <div
-                    key={linha.op}
-                    className="flex flex-col gap-3 rounded-md border p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="font-medium tabular-nums">OP {linha.op}</span>
-                        {informacao ? (
-                          <Badge variant="outline" className="cursor-default">
-                            Entregue {formatQuantity(informacao.entregue)} de{" "}
-                            {formatQuantity(informacao.qtd_total)}
-                          </Badge>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="recibo-data-entrega">Data de entrega</Label>
+              <Input
+                id="recibo-data-entrega"
+                type="date"
+                value={dataEntrega}
+                onChange={(event) => setDataEntrega(event.target.value)}
+                disabled={createMutation.isPending}
+              />
+            </div>
+
+            {hasUltrapassa ? (
+              <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+                <TriangleAlert className="size-4 shrink-0" />
+                Alguma OP recebeu mais do que a quantidade total cadastrada.
+                Revise os valores ou prossiga mesmo assim.
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-2">
+              <Label>Itens do recibo</Label>
+              {linhas.length === 0 ? (
+                <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+                  Nenhuma OP selecionada.
+                </p>
+              ) : (
+                linhas.map((linha) => {
+                  const informacao = itens.find((item) => item.op === linha.op);
+                  return (
+                    <div
+                      key={linha.op}
+                      className="flex flex-col gap-3 rounded-md border p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="font-medium tabular-nums">
+                            OP {linha.op}
+                          </span>
+                          {informacao ? (
+                            <Badge variant="outline" className="cursor-default">
+                              Entregue {formatQuantity(informacao.entregue)} de{" "}
+                              {formatQuantity(informacao.qtd_total)}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeLinha(linha.op)}
+                          disabled={createMutation.isPending}
+                          aria-label={`Remover OP ${linha.op}`}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+
+                      {linha.cliente ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Cliente: {linha.cliente}
+                        </p>
+                      ) : null}
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`recibo-descricao-${linha.op}`}>
+                          Descrição
+                        </Label>
+                        <Textarea
+                          id={`recibo-descricao-${linha.op}`}
+                          value={linha.descricao}
+                          onChange={(event) =>
+                            setLinha(linha.op, {
+                              descricao: event.target.value,
+                            })
+                          }
+                          rows={2}
+                          disabled={createMutation.isPending}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                        <Label
+                          htmlFor={`recibo-quantidade-${linha.op}`}
+                          className="sm:w-28 sm:shrink-0"
+                        >
+                          Quantidade
+                        </Label>
+                        <Input
+                          id={`recibo-quantidade-${linha.op}`}
+                          type="number"
+                          min={0}
+                          value={linha.quantidade}
+                          onChange={(event) =>
+                            setLinha(linha.op, {
+                              quantidade: Number(event.target.value),
+                            })
+                          }
+                          disabled={createMutation.isPending}
+                          className="sm:max-w-40"
+                        />
+                        {linha.ultrapassa ? (
+                          <span className="text-xs text-amber-600 dark:text-amber-400">
+                            Aviso: soma passa do total da OP.
+                          </span>
                         ) : null}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeLinha(linha.op)}
-                        disabled={createMutation.isPending}
-                        aria-label={`Remover OP ${linha.op}`}
-                      >
-                        <Trash2 />
-                      </Button>
                     </div>
-
-                    {linha.cliente ? (
-                      <p className="truncate text-xs text-muted-foreground">
-                        Cliente: {linha.cliente}
-                      </p>
-                    ) : null}
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`recibo-descricao-${linha.op}`}>Descrição</Label>
-                      <Textarea
-                        id={`recibo-descricao-${linha.op}`}
-                        value={linha.descricao}
-                        onChange={(event) =>
-                          setLinha(linha.op, { descricao: event.target.value })
-                        }
-                        rows={2}
-                        disabled={createMutation.isPending}
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                      <Label
-                        htmlFor={`recibo-quantidade-${linha.op}`}
-                        className="sm:w-28 sm:shrink-0"
-                      >
-                        Quantidade
-                      </Label>
-                      <Input
-                        id={`recibo-quantidade-${linha.op}`}
-                        type="number"
-                        min={0}
-                        value={linha.quantidade}
-                        onChange={(event) =>
-                          setLinha(linha.op, {
-                            quantidade: Number(event.target.value),
-                          })
-                        }
-                        disabled={createMutation.isPending}
-                        className="sm:max-w-40"
-                      />
-                      {linha.ultrapassa ? (
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                          Aviso: soma passa do total da OP.
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 
