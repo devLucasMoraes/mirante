@@ -58,6 +58,11 @@ if (-not (Test-Path ".env.production")) {
   Write-Host "ATENCAO: edite .env.production (senhas, CORS_ORIGIN, WINGRAPHEX_DB_PASSWORD) antes de continuar!"
 }
 
+if (-not (Test-Path "apps\web\.env.production")) {
+  Write-Host "==> criando apps/web/.env.production a partir do exemplo (VITE_API_URL=/api)"
+  Copy-Item "apps\web\.env.production.example" "apps\web\.env.production"
+}
+
 if (-not $SkipBuild) {
   Write-Host "==> build do web (VITE_API_URL=/api, --force p/ ignorar cache turbo)"
   $env:VITE_API_URL = "/api"

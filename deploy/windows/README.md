@@ -109,8 +109,15 @@ O `ecosystem.config.cjs` roda `apps/api/src/server.ts` com `NODE_ENV=production`
 `LOG_LEVEL=info`. Ajuste o `cwd` se o repo não estiver em `C:\mirante`.
 
 ### 8. Build do web + seed do admin
+
+O build de produção usa `VITE_API_URL=/api` (mesma origem via proxy nginx).
+Isso é garantido de três formas: o `apps/web/.env.production` (criado pelo
+`deploy.ps1` a partir do exemplo, `VITE_API_URL=/api`), a variável de ambiente
+`VITE_API_URL=/api` no `deploy.ps1`, e o fallback do `client.ts` (em produção,
+sem env var, usa `/api`). Ou seja, um `pnpm build` manual **nunca** vai
+embutir `http://localhost:3000/api` (valor do `.env` de dev) no bundle.
+
 ```powershell
-$env:VITE_API_URL = "/api"     # mesma origem via proxy nginx
 pnpm build --filter=mirante-web --force
 pnpm --filter=mirante-api seed  # cria/atualiza o admin (SEED_ADMIN_*)
 ```
@@ -144,6 +151,7 @@ Espere: `{"status":"ok","db":1,"wingraphex":true}`. Depois abra
 | Sintoma | Causa provável / Solução |
 |---|---|
 | Login não persiste / cookie não é salvo | `COOKIE_SECURE=true` sem HTTPS → acesse via `https://`; ou CA não instalada no cliente |
+| Erro de CORS em produção (`localhost:3000`) | Build do web feito sem `VITE_API_URL=/api` → o bundle chama o localhost do cliente. Refaça o build (fallback do `client.ts` e `apps/web/.env.production` garantem `/api`). |
 | `ERR_CERT_AUTHORITY_INVALID` no navegador | Instale o `rootCA.pem` do mkcert na máquina cliente |
 | `503` nos endpoints `/api/wingraphex/*` | MySQL do ERP inacessível — a API sobe mesmo assim (pool lazy). Verifique `192.168.1.16:3307` e o `WINGRAPHEX_DB_PASSWORD` |
 | `wingraphex:false` no `/api/health` | Pool não conectou no `SELECT 1` — confira credenciais/firewall |

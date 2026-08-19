@@ -6,7 +6,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 
 export function resolveBaseUrl(raw: string | undefined): string {
   if (raw === undefined) {
-    return "http://localhost:3000/api";
+    return import.meta.env.PROD ? "/api" : "http://localhost:3000/api";
   }
   if (
     raw.startsWith("http://") ||
